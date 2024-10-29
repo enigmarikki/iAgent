@@ -2,13 +2,18 @@
     "functions": [
         {
             "name": "query_balance",
-            "description": "Query the balance of an Injective address",
+            "description": "Query the balance of an Injective address. If no address is provided, uses the current agent's address.",
             "parameters": {
               "type": "object",
               "properties": {
                 "address": {
                   "type": "string",
-                  "description": "Injective address to query"
+                  "description": "Optional: Injective address to query balance for. If not provided, uses current agent's address"
+                },
+                "denom": {
+                  "type": "string",
+                  "description": "Token denomination to query (e.g., 'INJ', 'USDT')",
+                  "default": "INJ"
                 },
                 "network_type": {
                   "type": "string",
@@ -17,7 +22,7 @@
                   "description": "Network to query (testnet or mainnet)"
                 }
               },
-              "required": ["address"]
+              "required": []
             }
           },
       {

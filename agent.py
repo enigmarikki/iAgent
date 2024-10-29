@@ -126,8 +126,7 @@ class InjectiveChatAgent:
 
     async def execute_function(self, function_name: str, arguments: dict, private_key) -> dict:
         """Execute the appropriate Injective function"""
-        try:
-            
+        try:    
             self.injective_trader = trader.InjectiveTrading(private_key)
             if function_name == "place_limit_order":
                 arguments["market_id"] = str(await get_market_id(arguments["market_id"]))
@@ -138,6 +137,7 @@ class InjectiveChatAgent:
             #elif function_name == "cancel_order":
             #    return await self.injective_trader.cancel_order(**arguments)
             elif function_name == "query_balance":
+                arguments["private_key"] = private_key
                 return await query_balance(**arguments)
             #FIXME: unify the message parsing
             elif function_name == "transfer_funds":
@@ -190,7 +190,6 @@ class InjectiveChatAgent:
                 # Extract function details
                 function_name = response_message.function_call.name
                 function_args = json.loads(response_message.function_call.arguments)
-                print(function_args)
                 # Execute the function
                 function_response = await self.execute_function(function_name, function_args, private_key)
                 
@@ -300,11 +299,12 @@ async def chat_endpoint():
                 "response": "Please provide a message to continue our conversation.",
                 "session_id": data.get('session_id', 'default'),
                 "agent_id": data.get('agent_id', 'default'),
-                "agent_privatekey": data.get('agent_private_key', 'default')
+                "agent_key": data.get('agent_key', 'default')
             }), 400
             
         session_id = data.get('session_id', 'default')
-        response = await agent.get_response(data['message'], session_id)
+        private_key = data.get('agent_key', 'default')
+        response = await agent.get_response(data['message'], session_id, private_key)
         
         return jsonify(response)
     except Exception as e:

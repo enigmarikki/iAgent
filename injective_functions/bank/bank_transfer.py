@@ -19,11 +19,11 @@ async def transfer_funds(
 ) -> dict:
     try:
         # select network
-        dotenv.load_dotenv()
+        
         if not private_key:
             raise ValueError("No private key found in environment variables")
         
-        network = Network.testnet() if network_type == "testnet" else Network.mainnet()
+        network = Network.mainnet()
         
         # initialize grpc client
         client = AsyncClient(network)

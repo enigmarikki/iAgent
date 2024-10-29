@@ -337,6 +337,7 @@ class InjectiveCLI:
                 animation_thread.start()
                 agent = self.agent_manager.get_current_agent()
                 print(agent)
+                # Make API request to the chat endpoint
                 try:
                     result = self.make_request('POST', '/chat', {
                         'message': user_input,
