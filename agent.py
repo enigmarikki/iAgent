@@ -1,3 +1,4 @@
+
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
@@ -12,6 +13,51 @@ import json
 import asyncio
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
+import aiohttp
+async def get_market_id(ticker_symbol):
+    # Normalize the ticker symbol to match the API format
+    normalized_ticker = ticker_symbol.replace('-', '/').upper()
+    if not normalized_ticker.endswith(' PERP'):
+        normalized_ticker += ' PERP'
+
+    # API endpoint for derivative markets
+    url = 'https://sentry.lcd.injective.network/injective/exchange/v1beta1/derivative/markets'
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(url) as response:
+                data = await response.json()
+
+                # Initialize a mapping of tickers to market IDs
+                ticker_to_market_id = {}
+
+                # Check if 'markets' key exists in the response
+                if 'markets' in data:
+                    for market_info in data['markets']:
+                        market = market_info.get('market', {})
+                        ticker = market.get('ticker', '').upper()
+                        market_id = market.get('market_id')
+
+                        # Ensure market_id does not have extra quotes
+                        if isinstance(market_id, str):
+                            market_id = market_id.strip("'\"")
+
+                        if ticker and market_id:
+                            ticker_to_market_id[ticker] = market_id
+
+                    # Get the market_id for the normalized ticker
+                    market_id = ticker_to_market_id.get(normalized_ticker)
+                    if market_id:
+                        return market_id
+                    else:
+                        print(f"No market ID found for ticker: {normalized_ticker}")
+                else:
+                    print("No market data found in the response.")
+        except aiohttp.ClientError as e:
+            print(f"HTTP request failed: {e}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+    return None
 
 # Initialize Quart app (async version of Flask)
 app = Quart(__name__)
@@ -39,6 +85,7 @@ class InjectiveChatAgent:
         try:
             with open('function_schemas.json', 'r') as f:
                 schemas = json.load(f)
+                print(schemas)
                 return schemas['functions']
         except FileNotFoundError:
             print("Warning: function_schemas.json not found")
@@ -48,11 +95,13 @@ class InjectiveChatAgent:
         """Execute the appropriate Injective function"""
         try:
             if function_name == "place_limit_order":
+                arguments["market_id"] = await get_market_id(arguments["market_id"])
                 return await self.injective_trader.place_limit_order(**arguments)
             elif function_name == "place_market_order":
+                arguments["market_id"] = await get_market_id(arguments["market_id"])
                 return await self.injective_trader.place_market_order(**arguments)
-            elif function_name == "cancel_order":
-                return await self.injective_trader.cancel_order(**arguments)
+            #elif function_name == "cancel_order":
+            #    return await self.injective_trader.cancel_order(**arguments)
             elif function_name == "query_balance":
                 return await query_balance(**arguments)
             elif function_name == "transfer_funds":
@@ -103,7 +152,7 @@ class InjectiveChatAgent:
                 # Extract function details
                 function_name = response_message.function_call.name
                 function_args = json.loads(response_message.function_call.arguments)
-                
+                print(function_args)
                 # Execute the function
                 function_response = await self.execute_function(function_name, function_args)
                 

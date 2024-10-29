@@ -3,6 +3,7 @@ import asyncio
 import os
 from decimal import Decimal
 from grpc import RpcError
+import dotenv
 from pyinjective.async_client import AsyncClient
 from pyinjective.constant import GAS_FEE_BUFFER_AMOUNT, GAS_PRICE
 from pyinjective.core.network import Network
@@ -10,7 +11,6 @@ from pyinjective.transaction import Transaction
 from pyinjective.wallet import PrivateKey
 
 async def transfer_funds(
-    private_key: str,
     to_address: str,
     amount: Decimal,
     denom: str = "INJ",
@@ -18,8 +18,13 @@ async def transfer_funds(
 ) -> dict:
     try:
         # select network
+        dotenv.load_dotenv()
+        private_key = os.getenv("INJECTIVE_PRIVATE_KEY")
+        if not private_key:
+            raise ValueError("No private key found in environment variables")
+        
         network = Network.testnet() if network_type == "testnet" else Network.mainnet()
-
+        
         # initialize grpc client
         client = AsyncClient(network)
         composer = await client.composer()
@@ -30,11 +35,11 @@ async def transfer_funds(
         pub_key = priv_key.to_public_key()
         address = pub_key.to_address()
         await client.fetch_account(address.to_acc_bech32())
-
+        print(f"from address : {address.to_acc_bech32()}, to address : {str(to_address)}")
         # prepare tx msg
         msg = composer.MsgSend(
             from_address=address.to_acc_bech32(),
-            to_address=to_address,
+            to_address=str(to_address),
             amount=float(amount),
             denom=denom,
         )

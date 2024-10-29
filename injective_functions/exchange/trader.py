@@ -86,6 +86,7 @@ class InjectiveTrading:
         
         msg = self.composer.msg_create_derivative_limit_order(
             sender=self.address.to_acc_bech32(),
+            fee_recipient = self.address.to_acc_bech32(),
             market_id=market_id ,
             subaccount_id=self.subaccount_id,
             price=Decimal(str(price)),
@@ -108,10 +109,12 @@ class InjectiveTrading:
         
         # For market orders, we'll use the current price as an estimate
         # In a real implementation, you'd want to fetch the current market price
-        estimated_price = 0
+        estimated_price = await self.client.fetch_derivative_mid_price_and_tob(
+        market_id=market_id)["midPrice"]
         
         msg = self.composer.msg_create_derivative_market_order(
             sender=self.address.to_acc_bech32(),
+            fee_recipient=self.address.to_acc_bech32(),
             market_id=market_id,
             subaccount_id=self.subaccount_id,
             price=Decimal(estimated_price),
@@ -124,19 +127,6 @@ class InjectiveTrading:
             ),
             order_type=side,
             cid=str(uuid.uuid4()),
-        )
-        
-        return await self.build_and_broadcast_tx(msg)
-
-    async def cancel_order(self, order_hash: str, market_id: str):
-        """Cancel an existing order"""
-        await self.init_client()
-        
-        msg = self.composer.msg_cancel_derivative_order(
-            sender=self.address.to_acc_bech32(),
-            market_id=market_id,
-            subaccount_id=self.subaccount_id,
-            order_hash=order_hash
         )
         
         return await self.build_and_broadcast_tx(msg)
