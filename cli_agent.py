@@ -1,51 +1,63 @@
+import platform
+import sys
 import asyncio
 import typer
 from rich.console import Console
-from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich import print as rprint
+from rich.text import Text
+from rich.live import Live
+from rich.layout import Layout
 import openai
 import os
 from typing import Optional
 from swarm import Swarm, Agent
 import time
 
+from typing import Callable
+from prompt_toolkit.document import Document
+from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+from prompt_toolkit.formatted_text import FormattedText
+from prompt_toolkit.shortcuts import prompt
+import prompt_toolkit.lexers
+import re
+
 app = typer.Typer()
 console = Console()
 
-def pretty_print_messages(messages):
-    for message in messages:
-        if message["content"] is None:
-            continue
-        print(f"{message['sender']}: {message['content']}")
+class DialogueStyle:
+    ASSISTANT_COLOR = "green"
+    SYSTEM_COLOR = "yellow"
+    USER_COLOR = "blue"
 
 class AgentCLI:
     def __init__(self):
         self.console = Console()
         self.history = []
-        self.agent = Agent(name="AI Agent",    instructions="You are a helpful agent.",)
+        self.agent = Agent(name="AI Agent", instructions="You are a helpful agent.")
         self.client = Swarm()
 
-    def display_message(self, role: str, content: str):
-        """Display a message with appropriate styling"""
-        if role == "assistant":
-            panel = Panel(
-                Markdown(content),
-                title="🤖 Assistant",
-                border_style="green",
-                padding=(1, 2)
-            )
-        else:
-            panel = Panel(
-                content,
-                title="👤 You",
-                border_style="blue",
-                padding=(1, 2)
-            )
-        self.console.print(panel)
-        self.console.print()
+    def display_message(self, role: str, content: str, thinking: bool = False):
+        """Display a message with dialogue style for all roles"""
+        text = Text()
 
+        if role == "assistant":
+            text.append("\n💡 Assistant • ", style=DialogueStyle.ASSISTANT_COLOR)
+            text.append(time.strftime("%H:%M", time.localtime()), style="dim")
+            text.append(f"\n{content}", style=DialogueStyle.ASSISTANT_COLOR)
+            self.console.print(text)
+        elif role == "system":
+            text.append("\n⚙️ System • ", style=DialogueStyle.SYSTEM_COLOR)
+            text.append(time.strftime("%H:%M", time.localtime()), style="dim")
+            text.append(f"\n{content}\n", style=DialogueStyle.SYSTEM_COLOR)
+            self.console.print(text)
+        else:  # user
+            text.append("👤 You • ", style=DialogueStyle.USER_COLOR)
+            text.append(time.strftime("%H:%M", time.localtime()), style="dim")
+            self.console.print(text, end="\n")
+            user_input = console.input("")
+            return user_input
 
 @app.command()
 def chat(
@@ -60,7 +72,7 @@ def chat(
         help="System prompt to set the agent's behavior"
     )
 ):
-    """Start an interactive chat session with the InjectiveLab AI agent"""
+    """Start an interactive chat session"""
 
     # Set up API key
     if api_key:
@@ -76,42 +88,43 @@ def chat(
     messages = [{"role": "system", "content": system_prompt}]
 
     # Welcome message
-    console.print(Panel(
-        "[bold green]Welcome to the InjectiveLab AI Agent CLI![/bold green]\n"
-        "Type 'exit' or press Ctrl+C to end the conversation.",
-        title="🤖 InjectiveLab Agent",
-        border_style="green"
-    ))
+    agent.display_message(
+        "system",
+        "Welcome to the InjectiveLab AI Agent CLI!\nType 'exit' or press Ctrl+C to end the conversation."
+    )
 
     while True:
         try:
-            # Get user input
-            user_input = typer.prompt("\nYou")
-            # Display user message
-            agent.display_message("user", user_input)
+            # Get user input with prefix displayed first
+            user_input = agent.display_message("user", "")
+            if not user_input:
+                continue
+
 
             if user_input.lower() in ['exit', 'quit']:
-                console.print("\n[yellow]Goodbye! 👋[/yellow]")
+                agent.display_message("system", "Goodbye! 👋")
                 break
 
             # Add to messages
             messages.append({"role": "user", "content": user_input})
 
-            # Get and display assistant response
-            response = client.run(agent=agent.agent, messages=messages)
-            response_messages = response.messages
-            if response_messages:
-                for message in response_messages:
-                    agent.display_message(message["role"], message["content"])
-                    messages.append({"role": "assistant", "content": message['content']})
-            else:
-                continue
+            # Get response
+            with Live(auto_refresh=True) as live:
+                response = client.run(agent=agent.agent, messages=messages)
+                response_messages = response.messages
+
+                if response_messages:
+                    for message in response_messages:
+                        agent.display_message(message["role"], message["content"])
+                        messages.append({"role": "assistant", "content": message['content']})
+                else:
+                    continue
 
         except KeyboardInterrupt:
-            console.print("\n[yellow]Goodbye! 👋[/yellow]")
+            agent.display_message("system", "Goodbye! 👋")
             break
         except Exception as e:
-            console.print(f"\n[red]Error: {str(e)}[/red]")
+            agent.display_message("system", f"Error: {str(e)}")
             break
 
 if __name__ == "__main__":
