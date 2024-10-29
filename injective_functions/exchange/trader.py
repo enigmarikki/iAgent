@@ -17,13 +17,13 @@ from datetime import datetime
 app = Flask(__name__)
 
 class InjectiveTrading:
-    def __init__(self):
+    def __init__(self, privateKey):
         dotenv.load_dotenv()
-        self.private_key = os.getenv("INJECTIVE_PRIVATE_KEY")
+        self.private_key = privateKey
         if not self.private_key:
             raise ValueError("No private key found in environment variables")
         
-        self.network = Network.testnet()
+        self.network = Network.mainnet()
         
     async def init_client(self):
         """Initialize the Injective client and required components"""
@@ -58,7 +58,7 @@ class InjectiveTrading:
             return {"error": str(ex)}
 
         gas_price = GAS_PRICE
-        gas_limit = int(sim_res["gasInfo"]["gasUsed"]) + GAS_FEE_BUFFER_AMOUNT
+        gas_limit = int(sim_res["gasInfo"]["gasUsed"]) + int(2) * GAS_FEE_BUFFER_AMOUNT
         gas_fee = "{:.18f}".format((gas_price * gas_limit) / pow(10, 18)).rstrip("0")
         
         fee = [
@@ -83,7 +83,7 @@ class InjectiveTrading:
     async def place_limit_order(self, price: float, quantity: float, side: str, market_id: str):
         """Place a limit order"""
         await self.init_client()
-        
+
         msg = self.composer.msg_create_derivative_limit_order(
             sender=self.address.to_acc_bech32(),
             fee_recipient = self.address.to_acc_bech32(),
@@ -100,7 +100,7 @@ class InjectiveTrading:
             order_type=side,
             cid=str(uuid.uuid4()),
         )
-        
+
         return await self.build_and_broadcast_tx(msg)
 
     async def place_market_order(self, quantity: float, side: str, market_id: str):

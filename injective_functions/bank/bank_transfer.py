@@ -14,12 +14,12 @@ async def transfer_funds(
     to_address: str,
     amount: Decimal,
     denom: str = "INJ",
-    network_type: str = "testnet"
+    network_type: str = "mainnet",
+    private_key: str = None,
 ) -> dict:
     try:
         # select network
         dotenv.load_dotenv()
-        private_key = os.getenv("INJECTIVE_PRIVATE_KEY")
         if not private_key:
             raise ValueError("No private key found in environment variables")
         

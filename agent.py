@@ -15,10 +15,14 @@ from hypercorn.config import Config
 from hypercorn.asyncio import serve
 import aiohttp
 async def get_market_id(ticker_symbol):
+    """
+    Asynchronously fetches the market_id for a given ticker symbol from the Injective API.
+
+    :param ticker_symbol: The ticker symbol to look up (e.g., 'BTCUSDT', 'btc-usdt', 'btc')
+    :return: The market_id as a string if found, else None
+    """
     # Normalize the ticker symbol to match the API format
-    normalized_ticker = ticker_symbol.replace('-', '/').upper()
-    if not normalized_ticker.endswith(' PERP'):
-        normalized_ticker += ' PERP'
+    normalized_ticker = normalize_ticker(ticker_symbol)
 
     # API endpoint for derivative markets
     url = 'https://sentry.lcd.injective.network/injective/exchange/v1beta1/derivative/markets'
@@ -59,6 +63,36 @@ async def get_market_id(ticker_symbol):
             print(f"An error occurred: {e}")
     return None
 
+def normalize_ticker(ticker_symbol):
+    """
+    Normalizes various ticker formats to match the API's ticker format.
+
+    :param ticker_symbol: The ticker symbol to normalize (e.g., 'btcusdt', 'btc-usdt', 'btc')
+    :return: The normalized ticker symbol (e.g., 'BTC/USDT PERP')
+    """
+    # Remove any non-alphanumeric characters except '/'
+    import re
+    ticker_symbol = ticker_symbol.strip().upper()
+    ticker_symbol = re.sub(r'[^A-Z0-9/]', '', ticker_symbol)
+
+    # Handle special cases
+    if ticker_symbol == 'BTC':
+        base = 'BTC'
+        quote = 'USDT'  # Default quote currency
+    elif '/' in ticker_symbol:
+        base, quote = ticker_symbol.split('/', 1)
+    elif 'USDT' in ticker_symbol:
+        base = ticker_symbol.replace('USDT', '')
+        quote = 'USDT'
+    else:
+        # Default to USDT if no quote currency is provided
+        base = ticker_symbol
+        quote = 'USDT'
+
+    # Construct the normalized ticker
+    normalized_ticker = f"{base}/{quote} PERP"
+    return normalized_ticker
+
 # Initialize Quart app (async version of Flask)
 app = Quart(__name__)
 
@@ -77,7 +111,6 @@ class InjectiveChatAgent:
         
         # Initialize conversation histories
         self.conversations = {}
-        self.injective_trader = trader.InjectiveTrading()
         self.function_schemas = self.load_function_schemas()
 
     def load_function_schemas(self):
@@ -91,11 +124,13 @@ class InjectiveChatAgent:
             print("Warning: function_schemas.json not found")
             return []
 
-    async def execute_function(self, function_name: str, arguments: dict) -> dict:
+    async def execute_function(self, function_name: str, arguments: dict, private_key) -> dict:
         """Execute the appropriate Injective function"""
         try:
+            
+            self.injective_trader = trader.InjectiveTrading(private_key)
             if function_name == "place_limit_order":
-                arguments["market_id"] = await get_market_id(arguments["market_id"])
+                arguments["market_id"] = str(await get_market_id(arguments["market_id"]))
                 return await self.injective_trader.place_limit_order(**arguments)
             elif function_name == "place_market_order":
                 arguments["market_id"] = await get_market_id(arguments["market_id"])
@@ -104,16 +139,19 @@ class InjectiveChatAgent:
             #    return await self.injective_trader.cancel_order(**arguments)
             elif function_name == "query_balance":
                 return await query_balance(**arguments)
+            #FIXME: unify the message parsing
             elif function_name == "transfer_funds":
+                arguments["private_key"] = private_key
                 return await transfer_funds(**arguments)
             elif function_name == "stake_tokens":
+                arguments["private_key"] = private_key
                 return await stake_tokens(**arguments)
             else:
                 return {"error": f"Unknown function {function_name}"}
         except Exception as e:
             return {"error": str(e)}
     
-    async def get_response(self, message, session_id='default'):
+    async def get_response(self, message, session_id='default', private_key=None):
         """Get response from OpenAI API."""
         try:
             # Initialize conversation history for new sessions
@@ -154,7 +192,7 @@ class InjectiveChatAgent:
                 function_args = json.loads(response_message.function_call.arguments)
                 print(function_args)
                 # Execute the function
-                function_response = await self.execute_function(function_name, function_args)
+                function_response = await self.execute_function(function_name, function_args, private_key)
                 
                 # Add function call and response to conversation
                 self.conversations[session_id].append({
@@ -260,7 +298,9 @@ async def chat_endpoint():
             return jsonify({
                 "error": "No message provided",
                 "response": "Please provide a message to continue our conversation.",
-                "session_id": data.get('session_id', 'default')
+                "session_id": data.get('session_id', 'default'),
+                "agent_id": data.get('agent_id', 'default'),
+                "agent_privatekey": data.get('agent_private_key', 'default')
             }), 400
             
         session_id = data.get('session_id', 'default')
