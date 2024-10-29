@@ -1,0 +1,127 @@
+{
+    "functions": [
+        {
+            "name": "query_balance",
+            "description": "Query the balance of an Injective address",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "description": "Injective address to query"
+                },
+                "network_type": {
+                  "type": "string",
+                  "enum": ["testnet", "mainnet"],
+                  "default": "testnet",
+                  "description": "Network to query (testnet or mainnet)"
+                }
+              },
+              "required": ["address"]
+            }
+          },
+      {
+        "name": "place_limit_order",
+        "description": "Place a limit order for a trading pair",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "market_id": {
+              "type": "string",
+              "description": "Trading pair (e.g., BTC-USDT, ETH-USDT)"
+            },
+            "side": {
+              "type": "string",
+              "enum": ["BUY", "SELL"],
+              "description": "Order side"
+            },
+            "price": {
+              "type": "number",
+              "description": "Limit price for the order, sell or buy"
+            },
+            "quantity": {
+              "type": "number",
+              "description": "Amount to trade"
+            }
+          },
+          "required": ["market_id", "side", "price", "quantity"]
+        }
+      },
+      {
+        "name": "place_market_order",
+        "description": "Place a market order for a trading pair",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "market_id": {
+              "type": "string",
+              "description": "Trading pair (e.g., BTC-USDT, ETH-USDT)"
+            },
+            "side": {
+              "type": "string",
+              "enum": ["BUY", "SELL"],
+              "description": "Order side"
+            },
+            "quantity": {
+              "type": "number",
+              "description": "Amount to trade"
+            }
+          },
+          "required": ["market_id", "side", "quantity"]
+        }
+      },
+      {
+        "name": "stake_tokens",
+        "description": "Stake tokens with a validator",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "validator_address": {
+              "type": "string",
+              "description": "Validator address to stake with"
+            },
+            "amount": {
+              "type": "number",
+              "description": "Amount to stake"
+            },
+            "network_type": {
+              "type": "string",
+              "enum": ["testnet", "mainnet"],
+              "default": "testnet",
+              "description": "Network to use (testnet or mainnet)"
+            }
+          },
+          "required": ["validator_address", "amount"]
+        }
+      },
+      {
+        "name": "transfer_funds",
+        "description": "Transfer funds to another Injective address",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "to_address": {
+              "type": "string",
+              "description": "Recipient's Injective address"
+            },
+            "amount": {
+              "type": "number",
+              "description": "Amount to transfer"
+            },
+            "denom": {
+              "type": "string",
+              "description": "Token denomination",
+              "default": "INJ"
+            },
+            "network_type": {
+              "type": "string",
+              "enum": ["testnet", "mainnet"],
+              "default": "testnet",
+              "description": "Network to use (testnet or mainnet)"
+            }
+          },
+          "required": ["to_address", "amount"]
+        }
+      }
+    ]
+  }
