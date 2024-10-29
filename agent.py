@@ -171,7 +171,7 @@ class InjectiveChatAgent:
                 messages=[
                     {
                         "role": "system",
-                        "content": """You are a helpful crypto trading assistant on Injective Protocol. 
+                        "content": """You are a helpful crypto trading assistant on Injective Chain. 
                         You can help with trading, checking balances, transfers, and staking. 
                         For general questions, provide informative and engaging responses.
                         When users want to perform actions, use the appropriate function calls."""
@@ -247,7 +247,7 @@ class InjectiveChatAgent:
                     "session_id": session_id
                 }
             else:
-                default_response = "I'm here to help you with trading on Injective Protocol. You can ask me about trading, checking balances, making transfers, or staking. How can I assist you today?"
+                default_response = "I'm here to help you with trading on Injective Chain. You can ask me about trading, checking balances, making transfers, or staking. How can I assist you today?"
                 self.conversations[session_id].append({
                     "role": "assistant",
                     "content": default_response

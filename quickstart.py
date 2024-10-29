@@ -44,12 +44,12 @@ class AgentManager:
             raise ValueError(f"Agent '{name}' already exists")
             
         # Generate new private key
-        private_key = "0x" + secrets.token_hex(32)
+        private_key = str(secrets.token_hex(32))
         account = Account.from_key(private_key)
         
         agent_info = {
             "private_key": private_key,
-            "address": account.address,
+            "address": str(account.address),
             "created_at": datetime.now().isoformat()
         }
         
@@ -208,7 +208,15 @@ class InjectiveCLI:
         """Display welcome banner with agent information"""
         self.clear_screen()
         print(f"{Fore.CYAN}=" * 80)
-        print(f"{Back.BLUE}{Fore.WHITE} Injective Protocol Interactive CLI Client {Style.RESET_ALL}")
+        print(Fore.BLUE + """
+        ██╗███╗   ██╗     ██╗███████╗ ██████╗████████╗██╗██╗   ██╗███████╗
+        ██║████╗  ██║     ██║██╔════╝██╔════╝╚══██╔══╝██║██║   ██║██╔════╝
+        ██║██╔██╗ ██║     ██║█████╗  ██║        ██║   ██║██║   ██║█████╗  
+        ██║██║╚██╗██║██   ██║██╔══╝  ██║        ██║   ██║╚██╗ ██╔╝██╔══╝  
+        ██║██║ ╚████║╚█████╔╝███████╗╚██████╗   ██║   ██║ ╚████╔╝ ███████╗
+        ╚═╝╚═╝  ╚═══╝ ╚════╝ ╚══════╝ ╚═════╝   ╚═╝   ╚═╝  ╚═══╝  ╚══════╝
+        """ + Fore.RESET)
+        print(f"{Back.BLUE}{Fore.WHITE} Injective Chain Interactive CLI Client {Style.RESET_ALL}")
         print(f"{Fore.CYAN}Connected to: {self.api_url}")
         print(f"Session ID: {self.session_id}")
         
@@ -217,7 +225,7 @@ class InjectiveCLI:
             print(f"Current Agent: {self.agent_manager.current_agent}")
             print(f"Agent Address: {current_agent['address']}")
         else:
-            print(f"{Fore.YELLOW}No agent selected{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}No agent selected please select an agent{Style.RESET_ALL}")
             
         print(f"Network: TESTNET,MAINNET")
         print("=" * 80)
@@ -307,7 +315,7 @@ class InjectiveCLI:
                 user_input = input(f"{Fore.GREEN}Command: {Style.RESET_ALL}").strip()
                 
                 if user_input.lower() == 'quit':
-                    print(f"\n{Fore.YELLOW}Exiting Injective Protocol CLI... 👋{Style.RESET_ALL}")
+                    print(f"\n{Fore.YELLOW}Exiting Injective Chain CLI... 👋{Style.RESET_ALL}")
                     break
                     
                 # Handle 'clear' command
@@ -336,7 +344,6 @@ class InjectiveCLI:
                 animation_thread.daemon = True
                 animation_thread.start()
                 agent = self.agent_manager.get_current_agent()
-                print(agent)
                 # Make API request to the chat endpoint
                 try:
                     result = self.make_request('POST', '/chat', {
@@ -358,14 +365,14 @@ class InjectiveCLI:
                     
             except KeyboardInterrupt:
                 self.animation_stop = True
-                print(f"\n{Fore.YELLOW}Exiting Injective Protocol CLI... 👋{Style.RESET_ALL}")
+                print(f"\n{Fore.YELLOW}Exiting Injective Chain CLI... 👋{Style.RESET_ALL}")
                 break
             except Exception as e:
                 self.animation_stop = True
                 print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
 
 def main():
-    parser = argparse.ArgumentParser(description='Injective Protocol CLI Client')
+    parser = argparse.ArgumentParser(description='Injective Chain CLI Client')
     parser.add_argument('--url', default="http://localhost:5000", help='API URL')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     args = parser.parse_args()

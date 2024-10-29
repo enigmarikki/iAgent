@@ -55,7 +55,7 @@ async def stake_tokens(
 
         # build tx
         gas_price = GAS_PRICE
-        gas_limit = int(sim_res["gasInfo"]["gasUsed"]) + GAS_FEE_BUFFER_AMOUNT
+        gas_limit = int(sim_res["gasInfo"]["gasUsed"]) + 2*GAS_FEE_BUFFER_AMOUNT
         gas_fee = "{:.18f}".format((gas_price * gas_limit) / pow(10, 18)).rstrip("0")
         fee = [
             composer.coin(
