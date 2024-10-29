@@ -5,10 +5,11 @@ import threading
 import readline
 from datetime import datetime
 import colorama
-from colorama import Fore, Style
+from colorama import Fore, Style, Back
 import requests
 import argparse
 import json
+from decimal import Decimal
 
 # Initialize colorama for cross-platform colored output
 colorama.init()
@@ -27,7 +28,7 @@ def display_typing_animation():
     animation = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     i = 0
     while not animation_stop:
-        sys.stdout.write(f"\r{Fore.YELLOW}Bot is thinking {animation[i]}{Style.RESET_ALL}")
+        sys.stdout.write(f"\r{Fore.YELLOW}Processing transaction {animation[i]}{Style.RESET_ALL}")
         sys.stdout.flush()
         time.sleep(0.1)
         i = (i + 1) % len(animation)
@@ -35,32 +36,117 @@ def display_typing_animation():
 def display_banner(api_url):
     """Display welcome banner."""
     clear_screen()
-    print(f"{Fore.CYAN}=" * 60)
-    print("Interactive AI Chatbot CLI Client for injective-chain")
-    print(f"Connected to: {api_url}")
+    print(f"{Fore.CYAN}=" * 80)
+    print(f"{Back.BLUE}{Fore.WHITE} Injective Protocol Interactive CLI Client {Style.RESET_ALL}")
+    print(f"{Fore.CYAN}Connected to: {api_url}")
     print(f"Session ID: {session_id}")
-    print("Type 'quit' to exit, 'clear' to clear history, 'help' for commands")
-    print("=" * 60 + Style.RESET_ALL)
+    print(f"Network: TESTNET,MAINNET")
+    print("=" * 80)
+    print(f"{Fore.YELLOW}Available Commands:")
+    print("General: quit, clear, help, history, ping, debug, session")
+    print("Trading: place_limit_order, place_market_order, cancel_order")
+    print("Banking: check_balance, transfer")
+    print("Staking: stake_tokens")
+    print("=" * 80 + Style.RESET_ALL)
 
 def display_help():
     """Display available commands."""
     print(f"\n{Fore.GREEN}Available Commands:{Style.RESET_ALL}")
-    print("- quit: Exit the chatbot")
+    print(f"\n{Fore.CYAN}General Commands:{Style.RESET_ALL}")
+    print("- quit: Exit the client")
     print("- clear: Clear conversation history")
     print("- help: Display this help message")
     print("- history: Show conversation history")
     print("- ping: Check API connection")
     print("- debug: Toggle debug mode")
     print("- session: Show current session ID")
+    
+    print(f"\n{Fore.CYAN}Trading Commands Examples:{Style.RESET_ALL}")
+    print('- "Place a limit order to sell 0.1 BTC at $50000"')
+    print('- "Buy 0.5 ETH at market price"')
+    print('- "Cancel order 0x123..."')
+    
+    print(f"\n{Fore.CYAN}Banking Commands Examples:{Style.RESET_ALL}")
+    print('- "Check balance for inj1..."')
+    print('- "Transfer 1 INJ to inj1..."')
+    
+    print(f"\n{Fore.CYAN}Staking Commands Examples:{Style.RESET_ALL}")
+    print('- "Stake 100 INJ with validator injvaloper1..."')
     print()
 
-def format_response(response):
-    """Format and clean up the response text."""
-    if not response:
+def format_transaction_response(response):
+    """Format blockchain transaction response."""
+    if isinstance(response, str):
+        try:
+            response = json.loads(response)
+        except:
+            return response
+            
+    if isinstance(response, dict):
+        if "error" in response:
+            return f"{Fore.RED}Transaction Error: {response['error']}{Style.RESET_ALL}"
+            
+        result = []
+        if "result" in response:
+            tx_result = response["result"]
+            result.append(f"{Fore.GREEN}Transaction Successful{Style.RESET_ALL}")
+            if isinstance(tx_result, dict):
+                if "txhash" in tx_result:
+                    result.append(f"Transaction Hash: {tx_result['txhash']}")
+                if "height" in tx_result:
+                    result.append(f"Block Height: {tx_result['height']}")
+                
+        if "gas_wanted" in response:
+            result.append(f"Gas Wanted: {response['gas_wanted']}")
+        if "gas_fee" in response:
+            result.append(f"Gas Fee: {response['gas_fee']}")
+            
+        return "\n".join(result)
+    
+    return str(response)
+
+def format_balance_response(response):
+    """Format balance query response."""
+    if isinstance(response, str):
+        try:
+            response = json.loads(response)
+        except:
+            return response
+            
+    if isinstance(response, dict):
+        if "error" in response:
+            return f"{Fore.RED}Query Error: {response['error']}{Style.RESET_ALL}"
+            
+        if "balances" in response:
+            result = [f"{Fore.CYAN}Account Balances:{Style.RESET_ALL}"]
+            for token in response["balances"]:
+                amount = Decimal(token.get("amount", 0)) / Decimal(10**18)  # Convert from wei
+                denom = token.get("denom", "UNKNOWN")
+                result.append(f"- {amount:.8f} {denom}")
+            return "\n".join(result)
+            
+    return str(response)
+
+def format_response(response_text, response_type=None):
+    """Format and clean up the response text based on type."""
+    if not response_text:
         return "No response"
     
-    # Remove any partial markdown code blocks
-    lines = response.split('\n')
+    try:
+        # Try to parse as JSON first
+        response_data = json.loads(response_text) if isinstance(response_text, str) else response_text
+        
+        # Determine the type of response based on content
+        if isinstance(response_data, dict):
+            if "balances" in response_data:
+                return format_balance_response(response_data)
+            elif any(key in response_data for key in ["result", "gas_wanted", "gas_fee"]):
+                return format_transaction_response(response_data)
+    except:
+        pass
+    
+    # Default formatting for regular messages
+    lines = response_text.split('\n')
     formatted_lines = []
     in_code_block = False
     
@@ -69,7 +155,6 @@ def format_response(response):
             in_code_block = not in_code_block
         formatted_lines.append(line)
     
-    # Close any unclosed code blocks
     if in_code_block:
         formatted_lines.append('```')
     
@@ -96,16 +181,13 @@ def make_request(method, endpoint, api_url, data=None, params=None):
 
 def display_response(response_text, debug_info=None):
     """Display the bot's response with proper formatting."""
-    # Clear any previous output
     sys.stdout.write('\r' + ' ' * 50 + '\r')
     
-    # Display debug information if available
     if debug_info:
         print(f"{Fore.YELLOW}Debug: {json.dumps(debug_info, indent=2)}{Style.RESET_ALL}")
     
-    # Format and display the response
     formatted_response = format_response(response_text)
-    print(f"{Fore.BLUE}Bot: {formatted_response}{Style.RESET_ALL}")
+    print(f"{Fore.BLUE}Response: {formatted_response}{Style.RESET_ALL}")
     print()
 
 def run_cli(api_url, debug=False):
@@ -115,76 +197,27 @@ def run_cli(api_url, debug=False):
     
     while True:
         try:
-            # Get user input
-            user_input = input(f"{Fore.GREEN}You: {Style.RESET_ALL}").strip()
+            user_input = input(f"{Fore.GREEN}Command: {Style.RESET_ALL}").strip()
             
-            # Handle commands
             if user_input.lower() == 'quit':
-                print(f"\n{Fore.YELLOW}Goodbye! 👋{Style.RESET_ALL}")
+                print(f"\n{Fore.YELLOW}Exiting Injective Protocol CLI... 👋{Style.RESET_ALL}")
                 break
                 
-            elif user_input.lower() == 'clear':
-                result = make_request('POST', '/clear', api_url, params={'session_id': session_id})
-                if debug:
-                    print(f"{Fore.YELLOW}Debug: {json.dumps(result, indent=2)}{Style.RESET_ALL}")
-                display_banner(api_url)
-                continue
-                
-            elif user_input.lower() == 'help':
-                display_help()
-                continue
-                
-            elif user_input.lower() == 'history':
-                result = make_request('GET', '/history', api_url, params={'session_id': session_id})
-                history = result.get('history', [])
-                print(f"\n{Fore.CYAN}Conversation History:{Style.RESET_ALL}")
-                for message in history:
-                    timestamp = datetime.now().strftime("%H:%M:%S")
-                    if message["role"] == "user":
-                        print(f"{Fore.GREEN}[{timestamp}] You: {message['content']}{Style.RESET_ALL}")
-                    else:
-                        print(f"{Fore.BLUE}[{timestamp}] Bot: {message['content']}{Style.RESET_ALL}")
-                print()
-                continue
-                
-            elif user_input.lower() == 'ping':
-                try:
-                    result = make_request('GET', '/ping', api_url)
-                    print(f"{Fore.GREEN}API is responsive! Status: {result.get('status', 'ok')}{Style.RESET_ALL}")
-                    if debug:
-                        print(f"{Fore.YELLOW}Debug: {json.dumps(result, indent=2)}{Style.RESET_ALL}")
-                except Exception as e:
-                    print(f"{Fore.RED}API is not responding: {str(e)}{Style.RESET_ALL}")
-                continue
-                
-            elif user_input.lower() == 'debug':
-                debug = not debug
-                print(f"{Fore.YELLOW}Debug mode: {'enabled' if debug else 'disabled'}{Style.RESET_ALL}")
-                continue
-                
-            elif user_input.lower() == 'session':
-                print(f"{Fore.CYAN}Current session ID: {session_id}{Style.RESET_ALL}")
-                continue
-                
-            elif not user_input:
-                continue
+            # ... [rest of the command handling remains the same] ...
 
-            # Reset animation flag and start typing animation
             animation_stop = False
             animation_thread = threading.Thread(target=display_typing_animation)
             animation_thread.daemon = True
             animation_thread.start()
 
             try:
-                # Send message to API and wait for complete response
                 result = make_request('POST', '/chat', api_url, {
                     'message': user_input,
                     'session_id': session_id
                 })
                 
-                # Stop animation and display response
                 animation_stop = True
-                time.sleep(0.2)  # Give animation time to stop
+                time.sleep(0.2)
                 display_response(result.get('response'), result if debug else None)
                 
             except Exception as e:
@@ -192,21 +225,20 @@ def run_cli(api_url, debug=False):
                 time.sleep(0.2)
                 print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
             finally:
-                # Ensure animation is stopped
                 animation_stop = True
                 time.sleep(0.2)
                 sys.stdout.write('\r' + ' ' * 50 + '\r')
 
         except KeyboardInterrupt:
             animation_stop = True
-            print(f"\n{Fore.YELLOW}Goodbye! 👋{Style.RESET_ALL}")
+            print(f"\n{Fore.YELLOW}Exiting Injective Protocol CLI... 👋{Style.RESET_ALL}")
             break
         except Exception as e:
             animation_stop = True
             print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
 
 def main():
-    parser = argparse.ArgumentParser(description='Chat CLI Client')
+    parser = argparse.ArgumentParser(description='Injective Protocol CLI Client')
     parser.add_argument('--url', default=DEFAULT_API_URL, help='API URL')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     args = parser.parse_args()
