@@ -23,6 +23,17 @@ from prompt_toolkit.shortcuts import prompt
 import prompt_toolkit.lexers
 import re
 
+
+
+def transfer_to_agent_b():
+        return agent_b
+
+
+agent_b = Agent(
+    name="Agent B",
+    instructions="Only speak in Haikus.",
+)
+
 app = typer.Typer()
 console = Console()
 
@@ -35,7 +46,14 @@ class AgentCLI:
     def __init__(self):
         self.console = Console()
         self.history = []
-        self.agent = Agent(name="AI Agent", instructions="You are a helpful agent.")
+
+        def greet(context_variables, language):
+            user_name = context_variables["user_name"]
+            greeting = "Hola" if language.lower() == "spanish" else "Hello"
+            print(f"{greeting}, {user_name}!")
+            return "Done"
+
+        self.agent = Agent(name="Agent A", instructions="You are a helpful agent.", functions=[greet])
         self.client = Swarm()
 
     def display_message(self, role: str, content: str, thinking: bool = False):
@@ -48,7 +66,7 @@ class AgentCLI:
             text.append(f"\n{content}", style=DialogueStyle.ASSISTANT_COLOR)
             self.console.print(text)
         elif role == "system":
-            text.append("\n⚙️ System • ", style=DialogueStyle.SYSTEM_COLOR)
+            text.append("\n⚙️  System • ", style=DialogueStyle.SYSTEM_COLOR)
             text.append(time.strftime("%H:%M", time.localtime()), style="dim")
             text.append(f"\n{content}\n", style=DialogueStyle.SYSTEM_COLOR)
             self.console.print(text)
