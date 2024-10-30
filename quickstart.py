@@ -217,7 +217,7 @@ class InjectiveCLI:
         ██║██║ ╚████║╚█████╔╝███████╗╚██████╗   ██║   ██║ ╚████╔╝ ███████╗
         ╚═╝╚═╝  ╚═══╝ ╚════╝ ╚══════╝ ╚═════╝   ╚═╝   ╚═╝  ╚═══╝  ╚══════╝
         """ + Fore.RESET)
-        print(f"{Back.BLUE}{Fore.WHITE} Injective Chain Interactive CLI Client {Style.RESET_ALL}")
+        print(f"{Back.BLUE}{Fore.WHITE} Injective Chain Interactive Agent CLI Client {Style.RESET_ALL}")
         print(f"{Fore.CYAN}Connected to: {self.api_url}")
         print(f"Session ID: {self.session_id}")
         

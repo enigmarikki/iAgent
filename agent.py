@@ -62,6 +62,15 @@ async def get_market_id(ticker_symbol):
         except Exception as e:
             print(f"An error occurred: {e}")
     return None
+#TODO: validate this properly and assert type safety here
+def validate_market_id(market_id = None) -> bool:
+    str_id=str(market_id).lower()
+    
+    if (str_id[:2] == "0x" and len(str_id)==66)or (len(str(market_id))==64):
+        return True
+    else:
+        return False
+        
 
 def normalize_ticker(ticker_symbol):
     """
@@ -76,11 +85,10 @@ def normalize_ticker(ticker_symbol):
     ticker_symbol = re.sub(r'[^A-Z0-9/]', '', ticker_symbol)
 
     # Handle special cases
-    if ticker_symbol == 'BTC':
-        base = 'BTC'
-        quote = 'USDT'  # Default quote currency
-    elif '/' in ticker_symbol:
+    if '/' in ticker_symbol:
         base, quote = ticker_symbol.split('/', 1)
+    elif '-' in ticker_symbol:
+        base, quote = ticker_symbol.split('-', 1)
     elif 'USDT' in ticker_symbol:
         base = ticker_symbol.replace('USDT', '')
         quote = 'USDT'
@@ -129,10 +137,17 @@ class InjectiveChatAgent:
         try:    
             self.injective_trader = trader.InjectiveTrading(private_key)
             if function_name == "place_limit_order":
-                arguments["market_id"] = str(await get_market_id(arguments["market_id"]))
+                if not validate_market_id(arguments["market_id"]):
+                    arguments["market_id"] = str(await get_market_id(arguments["market_id"]))
+                else:
+                    arguments["market_id"] = arguments["market_id"]
                 return await self.injective_trader.place_limit_order(**arguments)
             elif function_name == "place_market_order":
-                arguments["market_id"] = await get_market_id(arguments["market_id"])
+                if not validate_market_id(arguments["market_id"]):
+                    arguments["market_id"] = str(await get_market_id(arguments["market_id"]))
+                else:
+                    arguments["market_id"] = arguments["market_id"]
+
                 return await self.injective_trader.place_market_order(**arguments)
             #elif function_name == "cancel_order":
             #    return await self.injective_trader.cancel_order(**arguments)
@@ -167,7 +182,7 @@ class InjectiveChatAgent:
             # Get response from OpenAI
             response = await asyncio.to_thread(
                 self.client.chat.completions.create,
-                model="gpt-4-turbo-preview",
+                model="gpt-4o",
                 messages=[
                     {
                         "role": "system",
@@ -190,6 +205,7 @@ class InjectiveChatAgent:
                 # Extract function details
                 function_name = response_message.function_call.name
                 function_args = json.loads(response_message.function_call.arguments)
+                print(function_args)
                 # Execute the function
                 function_response = await self.execute_function(function_name, function_args, private_key)
                 

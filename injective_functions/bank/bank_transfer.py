@@ -9,7 +9,7 @@ from pyinjective.constant import GAS_FEE_BUFFER_AMOUNT, GAS_PRICE
 from pyinjective.core.network import Network
 from pyinjective.transaction import Transaction
 from pyinjective.wallet import PrivateKey
-
+mainnet_test_denoms = {"inj": 1e18, "peggy0xdAC17F958D2ee523a2206206994597C13D831ec7": 1e6}
 async def transfer_funds(
     to_address: str,
     amount: Decimal,
@@ -22,9 +22,9 @@ async def transfer_funds(
         
         if not private_key:
             raise ValueError("No private key found in environment variables")
-        
+
         network = Network.mainnet()
-        
+
         # initialize grpc client
         client = AsyncClient(network)
         composer = await client.composer()
@@ -35,14 +35,19 @@ async def transfer_funds(
         pub_key = priv_key.to_public_key()
         address = pub_key.to_address()
         await client.fetch_account(address.to_acc_bech32())
-        print(f"from address : {address.to_acc_bech32()}, to address : {str(to_address)}")
         # prepare tx msg
+        #MEGA FIXME: convert denoms properly
+        if denom.lower() == "usdt" or denom.lower() == "peggy0xdAC17F958D2ee523a2206206994597C13D831ec7" or denom=="peggy0xdAC17F958D2ee523a2206206994597C13D831ec7":
+            denom =  "USDT" 
+
+        print(f"from address : {address.to_acc_bech32()}, to address : {str(to_address)}, denom:{denom}, amount :{amount}")
         msg = composer.MsgSend(
             from_address=address.to_acc_bech32(),
             to_address=str(to_address),
             amount=float(amount),
             denom=denom,
         )
+        print(msg)
 
         # build sim tx
         tx = (
@@ -52,14 +57,14 @@ async def transfer_funds(
             .with_account_num(client.get_number())
             .with_chain_id(network.chain_id)
         )
-        
+
         sim_sign_doc = tx.get_sign_doc(pub_key)
         sim_sig = priv_key.sign(sim_sign_doc.SerializeToString())
         sim_tx_raw_bytes = tx.get_tx_data(sim_sig, pub_key)
 
         # simulate tx
         sim_res = await client.simulate(sim_tx_raw_bytes)
-
+        print(sim_res)
         # build tx
         gas_price = GAS_PRICE
         gas_limit = int(sim_res["gasInfo"]["gasUsed"]) + 2 * GAS_FEE_BUFFER_AMOUNT
@@ -70,7 +75,7 @@ async def transfer_funds(
                 denom=network.fee_denom,
             )
         ]
-        
+
         tx = tx.with_gas(gas_limit).with_fee(fee).with_memo("").with_timeout_height(client.timeout_height)
         sign_doc = tx.get_sign_doc(pub_key)
         sig = priv_key.sign(sign_doc.SerializeToString())
@@ -78,7 +83,6 @@ async def transfer_funds(
 
         # broadcast tx
         res = await client.broadcast_tx_sync_mode(tx_raw_bytes)
-        
         return {
             "success": True,
             "result": res,
