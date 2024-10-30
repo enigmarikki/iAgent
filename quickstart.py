@@ -14,6 +14,7 @@ from typing import Dict, Optional
 import secrets
 from eth_account import Account
 import yaml
+from pyinjective.wallet import PrivateKey
 
 # Initialize colorama for cross-platform colored output
 colorama.init()
@@ -46,10 +47,10 @@ class AgentManager:
         # Generate new private key
         private_key = str(secrets.token_hex(32))
         account = Account.from_key(private_key)
-        
+        inj_pub_key = PrivateKey.from_hex(private_key).to_public_key().to_address().to_acc_bech32()
         agent_info = {
             "private_key": private_key,
-            "address": str(account.address),
+            "address": str(inj_pub_key),
             "created_at": datetime.now().isoformat()
         }
         
