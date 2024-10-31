@@ -122,6 +122,7 @@ class Message(Static):
           layout: horizontal;
           height: auto;
           padding: 0 0 0 0;
+          margin-bottom -1;
       }
 
       .user-message > .header {
