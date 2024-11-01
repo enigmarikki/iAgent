@@ -1,3 +1,4 @@
+from typing import Dict
 import re
 #TODO: validate this properly and assert type safety here
 def validate_market_id(market_id: str = None) -> bool:
@@ -8,7 +9,8 @@ def validate_market_id(market_id: str = None) -> bool:
     else:
         return False
         
-
+def combine_function_schemas() -> Dict:
+    pass
 def normalize_ticker(ticker_symbol):
     """
     Normalizes various ticker formats to match the API's ticker format.

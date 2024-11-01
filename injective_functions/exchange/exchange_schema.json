@@ -1,0 +1,54 @@
+{
+    "functions": [
+      {
+        "name": "place_limit_order",
+        "description": "Place a limit order for a trading pair",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "market_id": {
+              "type": "string",
+              "description": "Trading pair (e.g., BTC-USDT, ETH-USDT)"
+            },
+            "side": {
+              "type": "string",
+              "enum": ["BUY", "SELL"],
+              "description": "Order side"
+            },
+            "price": {
+              "type": "number",
+              "description": "Limit price for the order, sell or buy"
+            },
+            "quantity": {
+              "type": "number",
+              "description": "Amount to trade"
+            }
+          },
+          "required": ["market_id", "side", "price", "quantity"]
+        }
+      },
+      {
+        "name": "place_market_order",
+        "description": "Place a market order for a trading pair",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "market_id": {
+              "type": "string",
+              "description": "Trading pair (e.g., BTC-USDT, ETH-USDT)"
+            },
+            "side": {
+              "type": "string",
+              "enum": ["BUY", "SELL"],
+              "description": "Order side"
+            },
+            "quantity": {
+              "type": "number",
+              "description": "Amount to trade"
+            }
+          },
+          "required": ["market_id", "side", "quantity"]
+        }
+      }
+ ]
+}

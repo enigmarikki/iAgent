@@ -8,7 +8,7 @@ import argparse
 from injective_functions.exchange import trader
 from injective_functions.bank import bank
 from injective_functions.staking.stake import stake_tokens
-from injective_functions.utils.helpers import validate_market_id
+from injective_functions.utils.helpers import validate_market_id, combine_function_schemas
 from injective_functions.utils.indexer_requests import get_market_id
 import json
 import asyncio
@@ -48,15 +48,21 @@ class InjectiveChatAgent:
 
     async def execute_function(self, function_name: str, arguments: dict, private_key) -> dict:
         """Execute the appropriate Injective function"""
-        self.injective_trader = trader.InjectiveTrading(private_key, arguments["network_type"])
-        self.injective_bank = bank.InjectiveBank(private_key, arguments["network_type"])
+        # setup network first
+        self.network_type = None
+        print(arguments)
+        if function_name == "set_network":
+            self.network_type = arguments["network_type"]
+        self.injective_trader = trader.InjectiveTrading(private_key, self.network_type)
+        self.injective_bank = bank.InjectiveBank(private_key, self.network_type)
+        
         try:    
             if function_name == "place_limit_order":
                 if not validate_market_id(arguments["market_id"]):
                     arguments["market_id"] = str(await get_market_id(arguments["market_id"]))
                 else:
                     arguments["market_id"] = arguments["market_id"]
-                return await self.injective_trader.place_limit_order(**arguments)
+                return await self.injective_trader.place_limit_order()
             elif function_name == "place_market_order":
                 if not validate_market_id(arguments["market_id"]):
                     arguments["market_id"] = str(await get_market_id(arguments["market_id"]))
@@ -66,9 +72,9 @@ class InjectiveChatAgent:
                 return await self.injective_trader.place_market_order(**arguments)
             #elif function_name == "cancel_order":
             #    return await self.injective_trader.cancel_order(**arguments)
-            elif function_name == "query_balance":
+            elif function_name == "query_balances":
                 arguments["private_key"] = private_key
-                return await self.injective_bank.query_balances(**arguments)
+                return await self.injective_bank.query_balances(arguments["denoms"])
             #FIXME: unify the message parsing
             elif function_name == "transfer_funds":
                 arguments["private_key"] = private_key
@@ -76,8 +82,6 @@ class InjectiveChatAgent:
             elif function_name == "stake_tokens":
                 arguments["private_key"] = private_key
                 return await stake_tokens(**arguments)
-            else:
-                return {"error": f"Unknown function {function_name}"}
         except Exception as e:
             return {"error": str(e)}
     
