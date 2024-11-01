@@ -82,11 +82,11 @@ class CoinbaseClient:
 
         raise aiohttp.ClientError(f"Failed after {self.max_retries} attempts")
 
-    async def get_price(self, ticker: str) -> Optional[float]:
+    async def get_price(self, ticker: str) -> None|str:
         """Get current token price in USD"""
         try:
             data = await self._make_request(f"prices/{ticker}-USD/spot")
-            return float(data["data"]["amount"])
+            return data["data"]["amount"]
         except (KeyError, ValueError) as e:
             return None
         except Exception as e:
@@ -94,28 +94,15 @@ class CoinbaseClient:
 
     async def get_multiple_prices(
         self, tickers: List[str]
-    ) -> Dict[str, Optional[float]]:
+    ) -> Dict[str, None|str]:
         async with asyncio.TaskGroup() as group:  # Python 3.11+
             tasks = [group.create_task(self.get_price(ticker)) for ticker in tickers]
         return dict(zip(tickers, [t.result() for t in tasks]))
 
-    # async def get_multiple_prices(self, tickers: List[str]) -> Dict[str, Optional[float]]:
-    #    """Get prices for multiple tokens concurrently"""
-    #    async def get_single_price(ticker: str) -> tuple[str, Optional[float]]:
-    #        price = await self.get_price(ticker)
-    #        return ticker, price
-
-    #    tasks = [get_single_price(ticker) for ticker in tickers]
-    #    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    #    return {
-    #        ticker: price for ticker, price in results
-    #        if not isinstance(price, Exception)
-    #    }
 
     async def get_price_history(
         self, ticker: str, days: int = 7
-    ) -> Optional[List[Dict]]:
+    ) -> None|List[Dict]:
         """Get historical price data"""
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=days)

@@ -6,18 +6,15 @@ from textual import events
 from swarm import Swarm, Agent
 from typing import Dict, List
 from textual import events
-from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.app import App, ComposeResult
 from textual.containers import ScrollableContainer, Container
 from textual.widgets import Input, Label, Header, Footer, Static, Markdown
-from typing import TYPE_CHECKING
-
-# if TYPE_CHECKING:
 from src.app.config import CONFIG
 from src.ui.components.chat_container import ChatContainer
 from src.ui.components.input_container import InputContainer
 from src.ui.components.panel import Panel
+from src.agent.agents import triage_agent, sales_agent, refunds_agent
 
 
 class ChatApp(App):
@@ -71,7 +68,8 @@ class ChatApp(App):
 
     def __init__(self):
         super().__init__()
-        self.agent = Agent(name="AI Agent", instructions="You are a helpful agent.")
+        self.agent =triage_agent #Agent(name="AI Agent", instructions="You are a helpful agent.")
+        self.agents = [triage_agent,sales_agent, refunds_agent]
         self.client = Swarm()
         self.messages: List[Dict[str, str]] = [
             {

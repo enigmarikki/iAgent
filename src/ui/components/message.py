@@ -143,7 +143,7 @@ class Message(Static):
                 "user": f"{time.strftime('%H:%M', time.localtime())}",
             }
             yield Label(
-                f'{ROLE_PREFIXES[self.role]} • {time.strftime("%H:%M", time.localtime())}',
+                f'{ROLE_PREFIXES.get(self.role, self.role)} • {time.strftime("%H:%M", time.localtime())}',
                 classes=f"{self.role}-header-content",
             )
         with Static(classes=f"message-content {self.role}-content"):
