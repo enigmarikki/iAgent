@@ -16,9 +16,8 @@ from src.app.config import CONFIG, ROLE_PREFIXES
 class Panel(Container):
     """A collapsible panel with real-time updates."""
 
-    def __init__(self, content: str, position: str = "right") -> None:
+    def __init__(self, position: str = "right") -> None:
         super().__init__()
-        self.content = content
         self.position = position
         self.is_expanded = reactive(True)
         self.add_class(position)
@@ -72,21 +71,43 @@ class Panel(Container):
     def _generate_content(self, now: datetime, btc: None|str=None, eth: None|str=None, inj: None|str=None) -> str:
         """Generate beautifully formatted panel content."""
         return f"""\n
-                [yellow] System Status[/]
-                    • [dim]Time (UTC):[/] {now.strftime('%Y-%m-%d %H:%M:%S')}
-                    • [dim]Session:[/] {time.strftime('%H:%M:%S', time.gmtime())}
-                    • [dim]Connection:[/] [green]●[/] Active
+            [yellow] System Status[/]
+                • [dim]Time (UTC):[/] {now.strftime('%Y-%m-%d %H:%M:%S')}
+                • [dim]Session:[/] {time.strftime('%H:%M:%S', time.gmtime())}
+                • [dim]Connection:[/] [green]●[/] Active
 
-                [yellow] Market Overview[/]
-                    • [dim]BTC/USD:[/] {btc if btc else '[dim]Fetching...[/]'}
-                    • [dim]ETH/USD:[/] {eth if eth else '[dim]Fetching...[/]'}
-                    • [dim]INJ/USD:[/] {inj if inj else '[dim]Fetching...[/]'}
+            [yellow] Market Overview[/]
+                • [dim]BTC/USD:[/] {btc if btc else '[dim]Fetching...[/]'}
+                • [dim]ETH/USD:[/] {eth if eth else '[dim]Fetching...[/]'}
+                • [dim]INJ/USD:[/] {inj if inj else '[dim]Fetching...[/]'}
 
-                [yellow] Commands & Shortcuts[/]
-                    • [dim]CTRL+B[/] Toggle panel
-                    • [dim]CTRL+Q[/] Quit app
-                    • [dim]exit[/] End session
-"""
+            [yellow] Commands & Shortcuts[/]
+                • [dim]CTRL+B[/] Toggle panel
+                • [dim]CTRL+Q[/] Quit app
+                • [dim]exit[/] End session
+
+            [yellow]Available Functions:[/]
+                • [dim]Chat with AI assistant
+                • [dim]Get market analysis
+                • [dim]Query blockchain data
+                • [dim]Execute trading strategies
+
+            [yellow]Tips:[/]
+                • [dim]Be specific in your questions
+                • [dim]Use clear, concise language
+                • [dim]Review previous messages for context
+
+            [yellow]Resources:[/]
+                • [dim]Injective Docs
+                • [dim]Trading Documentation
+                • [dim]API Reference
+                • [dim]Community Forum
+
+            [yellow]Support:[/]
+                • [dim]Discord: InjectiveLabs
+                • [dim]Email: support@injective.com
+                • [dim]GitHub: injectivelabs
+                """
 
     def _format_price(self, price: None|str) -> str:
         """Format price with color based on value change."""

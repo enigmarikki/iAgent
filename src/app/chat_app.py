@@ -131,34 +131,8 @@ class ChatApp(App):
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
         yield Header()
-        right_panel_content = (
-            "[bold]InjectiveLab AI Assistant[/bold]\n\n"
-            "[yellow]Commands & Shortcuts:[/yellow]\n"
-            "• [bold]CTRL+B[/bold] - Toggle this panel\n"
-            "• [bold]CTRL+Q[/bold] - Quit application\n"
-            "• Type 'exit' - End conversation\n\n"
-            "[yellow]Available Functions:[/yellow]\n"
-            "• Chat with AI assistant\n"
-            "• Get market analysis\n"
-            "• Query blockchain data\n"
-            "• Execute trading strategies\n\n"
-            "[yellow]Tips:[/yellow]\n"
-            "• Be specific in your questions\n"
-            "• Use clear, concise language\n"
-            "• Review previous messages for context\n\n"
-            "[yellow]Resources:[/yellow]\n"
-            "• Injective Docs\n"
-            "• Trading Documentation\n"
-            "• API Reference\n"
-            "• Community Forum\n\n"
-            "[yellow]Support:[/yellow]\n"
-            "• Discord: InjectiveLabs\n"
-            "• Email: support@injective.com\n"
-            "• GitHub: injectivelabs/sdk-ts"
-        )
-
         yield Container(
-            Panel(right_panel_content, "right"),
+            Panel("right"),
             ChatContainer(id="chat"),
             InputContainer(id="user-input"),
             id="main-container",
