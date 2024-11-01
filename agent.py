@@ -6,101 +6,15 @@ from quart import Quart, request, jsonify
 from datetime import datetime
 import argparse
 from injective_functions.exchange import trader
-from injective_functions.bank.bank_transfer import transfer_funds
-from injective_functions.bank.query_balance import query_balance
+from injective_functions.bank import bank
 from injective_functions.staking.stake import stake_tokens
+from injective_functions.utils.helpers import validate_market_id
+from injective_functions.utils.indexer_requests import get_market_id
 import json
 import asyncio
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
 import aiohttp
-async def get_market_id(ticker_symbol):
-    """
-    Asynchronously fetches the market_id for a given ticker symbol from the Injective API.
-
-    :param ticker_symbol: The ticker symbol to look up (e.g., 'BTCUSDT', 'btc-usdt', 'btc')
-    :return: The market_id as a string if found, else None
-    """
-    # Normalize the ticker symbol to match the API format
-    normalized_ticker = normalize_ticker(ticker_symbol)
-
-    # API endpoint for derivative markets
-    url = 'https://sentry.lcd.injective.network/injective/exchange/v1beta1/derivative/markets'
-
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url) as response:
-                data = await response.json()
-
-                # Initialize a mapping of tickers to market IDs
-                ticker_to_market_id = {}
-
-                # Check if 'markets' key exists in the response
-                if 'markets' in data:
-                    for market_info in data['markets']:
-                        market = market_info.get('market', {})
-                        ticker = market.get('ticker', '').upper()
-                        market_id = market.get('market_id')
-
-                        # Ensure market_id does not have extra quotes
-                        if isinstance(market_id, str):
-                            market_id = market_id.strip("'\"")
-
-                        if ticker and market_id:
-                            ticker_to_market_id[ticker] = market_id
-
-                    # Get the market_id for the normalized ticker
-                    market_id = ticker_to_market_id.get(normalized_ticker)
-                    if market_id:
-                        return market_id
-                    else:
-                        print(f"No market ID found for ticker: {normalized_ticker}")
-                else:
-                    print("No market data found in the response.")
-        except aiohttp.ClientError as e:
-            print(f"HTTP request failed: {e}")
-        except Exception as e:
-            print(f"An error occurred: {e}")
-    return None
-#TODO: validate this properly and assert type safety here
-def validate_market_id(market_id = None) -> bool:
-    str_id=str(market_id).lower()
-    
-    if (str_id[:2] == "0x" and len(str_id)==66)or (len(str(market_id))==64):
-        return True
-    else:
-        return False
-        
-
-def normalize_ticker(ticker_symbol):
-    """
-    Normalizes various ticker formats to match the API's ticker format.
-
-    :param ticker_symbol: The ticker symbol to normalize (e.g., 'btcusdt', 'btc-usdt', 'btc')
-    :return: The normalized ticker symbol (e.g., 'BTC/USDT PERP')
-    """
-    # Remove any non-alphanumeric characters except '/'
-    import re
-    ticker_symbol = ticker_symbol.strip().upper()
-    ticker_symbol = re.sub(r'[^A-Z0-9/]', '', ticker_symbol)
-
-    # Handle special cases
-    if '/' in ticker_symbol:
-        base, quote = ticker_symbol.split('/', 1)
-    elif '-' in ticker_symbol:
-        base, quote = ticker_symbol.split('-', 1)
-    elif 'USDT' in ticker_symbol:
-        base = ticker_symbol.replace('USDT', '')
-        quote = 'USDT'
-    else:
-        # Default to USDT if no quote currency is provided
-        base = ticker_symbol
-        quote = 'USDT'
-
-    # Construct the normalized ticker
-    normalized_ticker = f"{base}/{quote} PERP"
-    return normalized_ticker
-
 # Initialize Quart app (async version of Flask)
 app = Quart(__name__)
 
@@ -120,11 +34,11 @@ class InjectiveChatAgent:
         # Initialize conversation histories
         self.conversations = {}
         self.function_schemas = self.load_function_schemas()
-
+        
     def load_function_schemas(self):
         """Load function schemas from JSON file"""
         try:
-            with open('function_schemas.json', 'r') as f:
+            with open('./injective_functions/function_schemas.json', 'r') as f:
                 schemas = json.load(f)
                 print(schemas)
                 return schemas['functions']
@@ -134,8 +48,9 @@ class InjectiveChatAgent:
 
     async def execute_function(self, function_name: str, arguments: dict, private_key) -> dict:
         """Execute the appropriate Injective function"""
+        self.injective_trader = trader.InjectiveTrading(private_key, arguments["network_type"])
+        self.injective_bank = bank.InjectiveBank(private_key, arguments["network_type"])
         try:    
-            self.injective_trader = trader.InjectiveTrading(private_key)
             if function_name == "place_limit_order":
                 if not validate_market_id(arguments["market_id"]):
                     arguments["market_id"] = str(await get_market_id(arguments["market_id"]))
@@ -153,11 +68,11 @@ class InjectiveChatAgent:
             #    return await self.injective_trader.cancel_order(**arguments)
             elif function_name == "query_balance":
                 arguments["private_key"] = private_key
-                return await query_balance(**arguments)
+                return await self.injective_bank.query_balances(**arguments)
             #FIXME: unify the message parsing
             elif function_name == "transfer_funds":
                 arguments["private_key"] = private_key
-                return await transfer_funds(**arguments)
+                return await self.injective_bank.transfer_funds(**arguments)
             elif function_name == "stake_tokens":
                 arguments["private_key"] = private_key
                 return await stake_tokens(**arguments)
