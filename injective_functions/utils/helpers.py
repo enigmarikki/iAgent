@@ -1,5 +1,14 @@
 from typing import Dict
 import re
+import requests
+
+def get_bridge_fee() -> float:
+    asset = "injective-protocol"
+    coingecko_endpoint = f"https://api.coingecko.com/api/v3/simple/price?ids={asset}&vs_currencies=usd"
+    token_price = requests.get(coingecko_endpoint).json()[asset]["usd"]
+    minimum_bridge_fee_usd = 10
+    return float(minimum_bridge_fee_usd / token_price)
+
 #TODO: validate this properly and assert type safety here
 def validate_market_id(market_id: str = None) -> bool:
     str_id=str(market_id).lower()
@@ -8,9 +17,10 @@ def validate_market_id(market_id: str = None) -> bool:
         return True
     else:
         return False
-        
+
 def combine_function_schemas() -> Dict:
     pass
+
 def normalize_ticker(ticker_symbol):
     """
     Normalizes various ticker formats to match the API's ticker format.
