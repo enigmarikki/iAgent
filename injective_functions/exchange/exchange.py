@@ -118,11 +118,26 @@ class InjectiveExchange:
                 "error": str(e)
             }
     
-    #The ones will below will be a part of the derivatives markets
     async def get_mid_price_and_tob_derivatives_market(self, market_id: str) -> Dict:
         try:
             await self.chain_client.init_client()
             res =  await self.chain_client.client.fetch_derivative_mid_price_and_tob(
+        market_id=market_id,
+    )
+            return {
+                "success": True,
+                "result": res
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "result": res
+            }
+    
+    async def get_mid_price_and_tob_spot_market(self, market_id: str) -> Dict:
+        try:
+            await self.chain_client.init_client()
+            res =  await self.chain_client.client.fetch_spot_mid_price_and_tob(
         market_id=market_id,
     )
             return {
@@ -166,10 +181,29 @@ class InjectiveExchange:
             }
         except Exception as e:
             return {
-                "success": False,
+                "success":
+                 False,
                 "result": str(e)
             }
     
+    async def trader_spot_orders(self, market_id: str, subaccount_idx : int):
+        try:
+            await self.chain_client.init_client()
+            subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
+            orders = await self.chain_client.client.fetch_chain_trader_spot_orders(
+            market_id=market_id,
+            subaccount_id=subaccount_id,
+            )
+            return {
+                "success": True, 
+                "result": orders
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "result": str(e)
+            }
+
     async def trader_derivative_orders_by_hash(self, market_id: str, subaccount_idx: int, order_hashes : List[str]) -> Dict:
         try:
             await self.chain_client.init_client()
@@ -188,7 +222,27 @@ class InjectiveExchange:
                 "success": False,
                 "result": str(e)
             }
+    
+    async def trader_spot_orders_by_hash(self, market_id: str, subaccount_idx: int, order_hashes : List[str]) -> Dict:
+        try:
+            await self.chain_client.init_client()
+            subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
+            orders = await self.chain_client.client.fetch_chain_spot_orders_by_hashes(
+            market_id=market_id,
+            subaccount_id=subaccount_id,
+            order_hashes=order_hashes,
+            )
+            return {
+                "success": True,
+                "result": orders
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "result": str(e)
+            }
         
+    
     async def get_subaccount_positions_in_markets(self, market_ids : List[str]) -> Dict:
         try:
             await self.chain_client.init_client()
@@ -212,6 +266,34 @@ class InjectiveExchange:
                 "success": True,
                 "result": position_map
             }
+        except Exception as e:
+            return {
+                "success": False,
+                "result": str(e)
+            }
+    
+
+
+    async def launch_instant_spot_market(self,
+                                         ticker: str,
+                                         base: str,
+                                         quote: str,
+                                         min_price_tick: str,
+                                         min_quantity_tick: str,
+                                         min_notional: str) -> Dict:
+        try:
+            self.chain_client.init_client()
+            msg = self.chain_client.composer.msg_instant_spot_market_launch(
+                sender=self.chain_client.address.to_acc_bech32(),
+                ticker=ticker,
+                base_denom=base,
+                quote_denom=quote,
+                min_price_tick_size=Decimal(min_price_tick),
+                min_quantity_tick_size=Decimal(min_quantity_tick),
+                min_notional=Decimal(min_notional),
+            )
+            await self.chain_client.build_and_broadcast_tx(msg)
+
         except Exception as e:
             return {
                 "success": False,
@@ -257,7 +339,10 @@ class InjectiveExchange:
                 "result": res
             }
         except Exception as e:
-            pass
+            return {
+                "success": False,
+                "result": str(e)
+            }
     
 
     async def opt_out_trade_earn_rewards(self) -> Dict: 
