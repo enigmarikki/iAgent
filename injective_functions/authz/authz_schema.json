@@ -1,0 +1,45 @@
+{
+    "functions": [
+        {
+            "name": "grant_address_auth",
+            "description": "Grants an address to boradcast messages to the chain on behalf ",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "grantee_adress": {
+                        "type": "string",
+                        "description": "The address who is given previlages to executes messages behalf of the adderess"
+                    },
+                    "msg_type": {
+                        "type": "string",
+                        "description": "The injective chain message the grantee has been given permission to execute"
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "description": "Time for the authz permission to expire"
+                    }
+                },
+                "required": ["grantee_address", "msg_type", "duration"]
+            }
+        },
+        {
+            "name": "revoke_address_auth",
+            "description": "Revokes an authorized address to  ",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "grantee_adress": {
+                        "type": "string",
+                        "description": "The address who was given previlages to executes messages behalf of the original address"
+                    },
+                    "msg_type": {
+                        "type": "string",
+                        "description": "The injective chain message the grantee has been given permission to execute"
+                    }
+                },
+                "required": ["grantee_address"]
+            }
+        }
+        
+    ]
+}

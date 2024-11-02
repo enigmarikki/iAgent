@@ -62,5 +62,14 @@ class InjectiveAccounts:
         await self.chain_client.build_and_broadcast_tx(msg)
     
     async def fetch_tx(self, tx_hash: str) -> Dict:
-        response = await self.chain_client.client.fetch_tx(hash=tx_hash)
-        return 
+        try:
+            res = await self.chain_client.client.fetch_tx(hash=tx_hash)
+            return {
+                "success": True,
+                "result": res,
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }

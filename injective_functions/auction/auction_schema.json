@@ -1,0 +1,22 @@
+{
+    "functions": [
+        {
+            "name": "send_bid_auction",
+            "description": "Sends a bid to the burn auction on behalf of the address",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "round": {
+                        "type": "integer",
+                        "description": "This specifies the round of the burn auction to participate in"
+                    },
+                    "amount" :{
+                        "type": "string",
+                        "description": "This specifies the amount to bid"
+                    }
+                },
+                "required": ["round", "amount"]
+            }
+        }       
+    ]
+}

@@ -2,6 +2,7 @@ from grpc import RpcError
 from pyinjective.async_client import AsyncClient
 from pyinjective.constant import GAS_FEE_BUFFER_AMOUNT, GAS_PRICE
 from pyinjective.core.network import Network
+from pyinjective.core.broadcaster import MsgBroadcasterWithPk
 from pyinjective.transaction import Transaction
 from pyinjective.wallet import PrivateKey
 
@@ -25,8 +26,11 @@ class ChainInteractor:
         self.pub_key = self.priv_key.to_public_key()
         self.address = self.pub_key.to_address()
         await self.client.fetch_account(self.address.to_acc_bech32())
-
-
+        self.message_broadcaster = MsgBroadcasterWithPk.new_using_simulation(
+                        network=self.network,
+                        private_key=self.priv_key
+                        )
+        
     async def build_and_broadcast_tx(self, msg):
         """Common function to build and broadcast transactions"""
         try:
@@ -64,7 +68,9 @@ class ChainInteractor:
             tx_raw_bytes = tx.get_tx_data(sig, self.pub_key)
 
             res = await self.client.broadcast_tx_sync_mode(tx_raw_bytes)
+            #standardized return arguments 
             return {
+                "success": True,
                 "result": res,
                 "gas_wanted": gas_limit,
                 "gas_fee": f"{gas_fee} INJ"
@@ -74,3 +80,4 @@ class ChainInteractor:
                 "success": False,
                 "error": str(e)
             }
+    
