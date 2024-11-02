@@ -6,20 +6,12 @@ from typing import Dict, List
 #TODO: Convert raw exchange message formats to human readable
 
 class InjectiveTokenFactory:
-    def __init__(self, private_key : str = None, network_type: str = "mainnet") -> None:
+    def __init__(self, chain_client) -> None:
         #Initializes the network and the composer
-        
-        if not private_key:
-            raise ValueError("No private key found in the environment!!")
-        self.private_key = private_key
-        self.network_type = network_type
-        #we could maybe override this by a master class
-        #to optimize the number of chain clients we'll spawn
-        self.chain_client = ChainInteractor(network_type=self.network_type, private_key=self.private_key)
-    
+        super().__init__(chain_client)
+
     async def create_denom(self, subdenom: str, name: str, symbol: str, decimals: int) -> Dict:
         try:
-
             await self.chain_client.init_client()
             msg = self.chain_client.composer.msg_create_denom(
                 sender=self.chain_client.address.to_acc_bech32(),

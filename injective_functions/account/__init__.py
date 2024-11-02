@@ -1,21 +1,14 @@
 from decimal import Decimal
-from injective_functions.utils.initializers import ChainInteractor
+from injective_functions.base import InjectiveBase
 from injective_functions.utils.helpers import get_bridge_fee
 from typing import Dict, List
 
 
 """This class handles all account transfer within the account"""
-class InjectiveAccounts:
-    def __init__(self, private_key : str = None, network_type: str = "mainnet") -> None:
+class InjectiveAccounts(InjectiveBase):
+    def __init__(self, chain_client) -> None:
         #Initializes the network and the composer
-        
-        if not private_key:
-            raise ValueError("No private key found in the environment!!")
-        self.private_key = private_key
-        self.network_type = network_type
-        #we could maybe override this by a master class
-        #to optimize the number of chain clients we'll spawn
-        self.chain_client = ChainInteractor(network_type=self.network_type, private_key=self.private_key)
+        super().__init__(chain_client)
 
     #We're using the MsgSubaccountTransfer
     #Handle errors properly here

@@ -1,20 +1,13 @@
 from decimal import Decimal
-from injective_functions.utils.initializers import ChainInteractor
+from injective_functions.base import InjectiveBase
 from typing import Dict, List
 from injective_functions.utils.indexer_requests import fetch_decimal_denoms
 
-class InjectiveBank:
-    def __init__(self, private_key : str = None, network_type: str = "mainnet") -> None:
+class InjectiveBank(InjectiveBase):
+    def __init__(self, chain_client) -> None:
         #Initializes the network and the composer
+        super().__init__(chain_client)
         
-        if not private_key:
-            raise ValueError("No private key found in the environment!!")
-        self.private_key = private_key
-        self.network_type = network_type
-        #we could maybe override this by a master class
-        #to optimize the number of chain clients we'll spawn
-        self.chain_client = ChainInteractor(network_type=self.network_type, private_key=self.private_key)
-
     async def transfer_funds(self, amount: Decimal, denom: str = None, to_address: str = None) -> Dict:
         await self.chain_client.init_client()
         msg = self.chain_client.composer.MsgSend(

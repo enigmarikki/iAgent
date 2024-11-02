@@ -1,16 +1,16 @@
 import uuid
 from decimal import Decimal
-from injective_functions.utils.initializers import ChainInteractor
+from injective_functions.base import InjectiveBase
 
 #TODO: serve endpoints of trader functions via an api
 #to isolate functions as much as possible
 #app = Flask(__name__)
 
-class InjectiveTrading:
-    def __init__(self, private_key, network_type: str = "mainnet"):
-        self.private_key = private_key
-        self.chain_client = ChainInteractor(network_type=network_type, private_key=self.private_key)
-    
+class InjectiveTrading(InjectiveBase):
+    def __init__(self, chain_client) -> None:
+        #Initializes the network and the composer
+        super().__init__(chain_client)
+
     async def place_derivative_limit_order(self, price: float, quantity: float, side: str, market_id: str, subaccount_idx: int):
         """Place a limit order"""
         await self.chain_client.init_client()

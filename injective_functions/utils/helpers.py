@@ -1,4 +1,5 @@
-from typing import Dict
+from typing import Dict, List
+import json
 import re
 import requests
 
@@ -18,8 +19,27 @@ def validate_market_id(market_id: str = None) -> bool:
     else:
         return False
 
-def combine_function_schemas() -> Dict:
-    pass
+def combine_function_schemas(input_files: List[str]) -> Dict:
+    # Initialize combined data structure
+    combined_data = {"functions": []}
+    # Read and combine all input files
+    for file_path in input_files:
+        try:
+            print(file_path)
+            with open(file_path, 'r') as file:
+                data = json.load(file)
+                if "functions" in data:
+                    combined_data["functions"].extend(data["functions"])
+        except FileNotFoundError:
+            print(f"Warning: File {file_path} not found, skipping...")
+        except json.JSONDecodeError:
+            print(f"Warning: File {file_path} contains invalid JSON, skipping...")
+    
+    output_file = "./injective_functions/functions_schemas.json"
+    # Write combined data to output file
+    with open(output_file, 'w') as file:
+        json.dump(combined_data, file, indent=2)
+    return combined_data
 
 def normalize_ticker(ticker_symbol):
     """

@@ -5,9 +5,8 @@ from dotenv import load_dotenv
 from quart import Quart, request, jsonify
 from datetime import datetime
 import argparse
-from injective_functions.exchange import trader
-from injective_functions.bank import bank
-from injective_functions.staking.stake import stake_tokens
+
+from injective_functions.factory import InjectiveClientFactory
 from injective_functions.utils.helpers import validate_market_id, combine_function_schemas
 from injective_functions.utils.indexer_requests import get_market_id
 import json
@@ -33,28 +32,28 @@ class InjectiveChatAgent:
         
         # Initialize conversation histories
         self.conversations = {}
+        # Initialize injective agents
+        self.agents = {}
         self.function_schemas = self.load_function_schemas()
         
     def load_function_schemas(self):
         """Load function schemas from JSON file"""
-        try:
-            with open('./injective_functions/function_schemas.json', 'r') as f:
-                schemas = json.load(f)
-                print(schemas)
-                return schemas['functions']
-        except FileNotFoundError:
-            print("Warning: function_schemas.json not found")
-            return []
-
+        dir_list = [
+            "./injective_functions/accounts/accounts_schema.json",
+            "./injective_functions/auction/auction_schema.json",
+            "./injective_functions/authz/authz_schema.json",
+            "./injective_functions/bank/bank_schema.json",
+            "./injective_functions/exchange/exchange_schema.json",
+            "./injective_functions/staking/staking_schema.json",
+            "./injective_functions/token_factory/token_factory_schema.json",
+            "./injective_functions/utils/utils_schema.json",
+        ]
+        
+        self.function_schemas = combine_function_schemas(dir_list)
+        
     async def execute_function(self, function_name: str, arguments: dict, private_key) -> dict:
         """Execute the appropriate Injective function"""
         # setup network first
-        self.network_type = None
-        print(arguments)
-        if function_name == "set_network":
-            self.network_type = arguments["network_type"]
-        self.injective_trader = trader.InjectiveTrading(private_key, self.network_type)
-        self.injective_bank = bank.InjectiveBank(private_key, self.network_type)
         
         try:    
             if function_name == "place_limit_order":
@@ -85,8 +84,16 @@ class InjectiveChatAgent:
         except Exception as e:
             return {"error": str(e)}
     
-    async def get_response(self, message, session_id='default', private_key=None):
+    async def get_response(self, 
+                           message, 
+                           session_id='default', 
+                           private_key=None, 
+                           agent_id=None,
+                           environment="mainnet"):
         """Get response from OpenAI API."""
+        if agent_id not in self.agents:
+            self.agents["agent_id"] = await InjectiveClientFactory.create_all(private_key=private_key, network_type=environment)
+
         try:
             # Initialize conversation history for new sessions
             if session_id not in self.conversations:
@@ -239,7 +246,8 @@ async def chat_endpoint():
             
         session_id = data.get('session_id', 'default')
         private_key = data.get('agent_key', 'default')
-        response = await agent.get_response(data['message'], session_id, private_key)
+        agent_id = data.get("agent_id", "default")
+        response = await agent.get_response(data['message'], session_id, private_key, agent_id)
         
         return jsonify(response)
     except Exception as e:
