@@ -6,13 +6,10 @@ from quart import Quart, request, jsonify
 from datetime import datetime
 import argparse
 from injective_functions.factory import InjectiveClientFactory
-from injective_functions.utils.helpers import validate_market_id, combine_function_schemas
 from injective_functions.utils.function_helper import (
-    InjectiveFunctionMapper,
     FunctionSchemaLoader,
     FunctionExecutor
 )
-from injective_functions.utils.indexer_requests import get_market_id
 import json
 import asyncio
 from hypercorn.config import Config
@@ -90,9 +87,10 @@ class InjectiveChatAgent:
                            agent_id=None,
                            environment="mainnet"):
         """Get response from OpenAI API."""
-        self.initialize_agent(agent_id=agent_id, private_key=private_key, environment=environment)
+        await self.initialize_agent(agent_id=agent_id, private_key=private_key, environment=environment)
+        print("initialized agents")
         try:
-            # Initialize conversation history for new sessions
+        # Initialize conversation history for new sessions
             if session_id not in self.conversations:
                 self.conversations[session_id] = []
             
@@ -110,7 +108,20 @@ class InjectiveChatAgent:
                     {
                         "role": "system",
                         "content": """You are a helpful crypto trading assistant on Injective Chain. 
-                        You can help with trading, checking balances, transfers, and staking. 
+                        
+                        When handling market IDs, always use these standardized formats:
+                        - For BTC perpetual: "BTC/USDT PERP" maps to "btcusdt-perp"
+                        - For ETH perpetual: "ETH/USDT PERP" maps to "ethusdt-perp"
+                        
+                        When users mention markets:
+                        1. If they use casual terms like "Bitcoin perpetual" or "BTC perp", interpret it as "BTC/USDT PERP"
+                        2. If they mention "Ethereum futures" or "ETH perpetual", interpret it as "ETH/USDT PERP"
+                        3. Always use the standardized format in your responses
+                        
+                        When making function calls:
+                        1. Convert the standardized format (e.g., "BTC/USDT PERP") to the internal format (e.g., "btcusdt-perp")
+                        2. When displaying results to users, convert back to the standard format
+                        
                         For general questions, provide informative and engaging responses.
                         When users want to perform actions, use the appropriate function calls."""
                     }
@@ -122,13 +133,12 @@ class InjectiveChatAgent:
             )
 
             response_message = response.choices[0].message
-            
+            print(response_message)
             # Handle function calling
             if hasattr(response_message, 'function_call') and response_message.function_call:
                 # Extract function details
                 function_name = response_message.function_call.name
                 function_args = json.loads(response_message.function_call.arguments)
-                print(function_args)
                 # Execute the function
                 function_response = await self.execute_function(function_name, function_args, agent_id)
                 
@@ -241,7 +251,7 @@ async def chat_endpoint():
                 "agent_key": data.get('agent_key', 'default'),
                 "environment": data.get('environment', 'testnet')
             }), 400
-            
+        
         session_id = data.get('session_id', 'default')
         private_key = data.get('agent_key', 'default')
         agent_id = data.get("agent_id", "default")

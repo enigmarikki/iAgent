@@ -14,9 +14,18 @@ class ChainInteractor:
             raise ValueError("No private key found in environment variables")
         
         self.network = Network.testnet() if network_type == "testnet" else Network.mainnet()
+        self.client = None
+        self.composer = None
+        self.message_broadcaster = None
+        self.priv_key = None
+        self.pub_key = None
+        self.address = None
+        self._initialized = False
 
     async def init_client(self):
         """Initialize the Injective client and required components"""
+        if self._initialized: 
+            return
         self.client = AsyncClient(self.network)
         self.composer = await self.client.composer()
         await self.client.sync_timeout_height()
@@ -25,11 +34,14 @@ class ChainInteractor:
         self.priv_key = PrivateKey.from_hex(self.private_key)
         self.pub_key = self.priv_key.to_public_key()
         self.address = self.pub_key.to_address()
+        print("fetch account")
         await self.client.fetch_account(self.address.to_acc_bech32())
         self.message_broadcaster = MsgBroadcasterWithPk.new_using_simulation(
                         network=self.network,
-                        private_key=self.priv_key
+                        private_key=self.private_key
                         )
+        print("fetched account")
+        self._initialized = True
         
     async def build_and_broadcast_tx(self, msg):
         """Common function to build and broadcast transactions"""

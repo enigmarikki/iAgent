@@ -1,6 +1,8 @@
 from decimal import Decimal
 from injective_functions.base import InjectiveBase
 from injective_functions.utils.indexer_requests import fetch_decimal_denoms
+from injective_functions.utils.helpers import impute_market_id, impute_market_ids
+
 from typing import Dict, List
 
 #TODO: Convert raw exchange message formats to human readable
@@ -46,6 +48,7 @@ class InjectiveExchange(InjectiveBase):
 
     async def get_aggregate_market_volumes(self, market_ids = List[str]) -> Dict:
         try:
+            market_ids = await impute_market_ids(market_ids)
             res = await self.chain_client.client.fetch_aggregate_market_volumes(
                 market_ids=market_ids
             )
@@ -61,6 +64,7 @@ class InjectiveExchange(InjectiveBase):
         
     async def get_aggregate_account_volumes(self, market_ids: List[str], addresses: List[str]) -> Dict:
         try:
+            market_ids = await impute_market_ids(market_ids)
             res = await self.chain_client.client.fetch_aggregate_volumes(
             accounts=addresses,
             market_ids=market_ids,
@@ -77,6 +81,7 @@ class InjectiveExchange(InjectiveBase):
 
     async def get_subaccount_orders(self, subaccount_idx: int, market_id : str) -> Dict:
         try:
+            market_id = await impute_market_id(market_id)
             await self.chain_client.init_client()
             subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
             orders = await self.chain_client.client.fetch_chain_subaccount_orders(
@@ -95,7 +100,8 @@ class InjectiveExchange(InjectiveBase):
     
     async def get_historical_orders(self, market_id: str) -> Dict:
 
-        try: 
+        try:
+            market_id = await impute_market_id(market_id)
             await self.chain_client.init_client()
             res = await self.chain_client.client.fetch_historical_trade_records(
             market_id=market_id
@@ -112,6 +118,7 @@ class InjectiveExchange(InjectiveBase):
     
     async def get_mid_price_and_tob_derivatives_market(self, market_id: str) -> Dict:
         try:
+            market_id = await impute_market_id(market_id)
             await self.chain_client.init_client()
             res =  await self.chain_client.client.fetch_derivative_mid_price_and_tob(
         market_id=market_id,
@@ -123,11 +130,12 @@ class InjectiveExchange(InjectiveBase):
         except Exception as e:
             return {
                 "success": False,
-                "result": res
+                "result": str(e)
             }
     
     async def get_mid_price_and_tob_spot_market(self, market_id: str) -> Dict:
         try:
+            market_id = await impute_market_id(market_id)
             await self.chain_client.init_client()
             res =  await self.chain_client.client.fetch_spot_mid_price_and_tob(
         market_id=market_id,
@@ -139,11 +147,12 @@ class InjectiveExchange(InjectiveBase):
         except Exception as e:
             return {
                 "success": False,
-                "result": res
+                "result": str(e)
             }
     
     async def get_derivatives_orderbook(self, market_id: str, limit: int = None) -> Dict:
         try:
+            market_id = await impute_market_id(market_id)
             await self.chain_client.init_client()
             orderbook = await self.chain_client.client.fetch_chain_derivative_orderbook(
             market_id=market_id,
@@ -161,6 +170,8 @@ class InjectiveExchange(InjectiveBase):
     
     async def trader_derivative_orders(self, market_id: str, subaccount_idx : int):
         try:
+
+            market_id = await impute_market_id(market_id)
             await self.chain_client.init_client()
             subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
             orders = await self.chain_client.client.fetch_chain_trader_derivative_orders(
@@ -180,6 +191,7 @@ class InjectiveExchange(InjectiveBase):
     
     async def trader_spot_orders(self, market_id: str, subaccount_idx : int):
         try:
+            market_id = await impute_market_id(market_id)
             await self.chain_client.init_client()
             subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
             orders = await self.chain_client.client.fetch_chain_trader_spot_orders(
@@ -198,6 +210,7 @@ class InjectiveExchange(InjectiveBase):
 
     async def trader_derivative_orders_by_hash(self, market_id: str, subaccount_idx: int, order_hashes : List[str]) -> Dict:
         try:
+            market_id = await impute_market_id(market_id)
             await self.chain_client.init_client()
             subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
             orders = await self.chain_client.client.fetch_chain_derivative_orders_by_hashes(
@@ -217,6 +230,7 @@ class InjectiveExchange(InjectiveBase):
     
     async def trader_spot_orders_by_hash(self, market_id: str, subaccount_idx: int, order_hashes : List[str]) -> Dict:
         try:
+            market_id = await impute_market_id(market_id)
             await self.chain_client.init_client()
             subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
             orders = await self.chain_client.client.fetch_chain_spot_orders_by_hashes(
@@ -237,6 +251,7 @@ class InjectiveExchange(InjectiveBase):
     
     async def get_subaccount_positions_in_markets(self, market_ids : List[str]) -> Dict:
         try:
+            market_ids = await impute_market_ids(market_ids)
             await self.chain_client.init_client()
             subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_id)
             positions = await self.chain_client.client.fetch_chain_subaccount_positions(

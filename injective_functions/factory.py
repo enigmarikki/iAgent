@@ -24,9 +24,12 @@ class InjectiveClientFactory:
         Returns:
             Dict: Dictionary containing all initialized clients
         """
+        # Create and initialize the chain client
         chain_client = ChainInteractor(network_type=network_type, private_key=private_key)
-        await chain_client.init_client()
-        return {
+        await chain_client.init_client()  # This line is crucial!
+        
+        # Create instances with the initialized chain client
+        clients = {
             "account": InjectiveAccounts(chain_client),
             "auction": InjectiveAuction(chain_client),
             "authz": InjectiveAuthz(chain_client),
@@ -36,3 +39,5 @@ class InjectiveClientFactory:
             "staking": InjectiveStaking(chain_client),
             "token_factory": InjectiveTokenFactory(chain_client)
         }
+        print(clients)
+        return clients

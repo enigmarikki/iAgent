@@ -1,11 +1,11 @@
-from decimal import Decimal
 from injective_functions.utils.initializers import ChainInteractor
 from injective_functions.utils.indexer_requests import fetch_decimal_denoms
 from typing import Dict, List
+from injective_functions.base import InjectiveBase
 
 #TODO: Convert raw exchange message formats to human readable
 
-class InjectiveTokenFactory:
+class InjectiveTokenFactory(InjectiveBase):
     def __init__(self, chain_client) -> None:
         #Initializes the network and the composer
         super().__init__(chain_client)

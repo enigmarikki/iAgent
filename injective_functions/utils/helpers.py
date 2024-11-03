@@ -2,6 +2,7 @@ from typing import Dict, List
 import json
 import re
 import requests
+from injective_functions.utils.indexer_requests import get_market_id
 
 def get_bridge_fee() -> float:
     asset = "injective-protocol"
@@ -41,31 +42,18 @@ def combine_function_schemas(input_files: List[str]) -> Dict:
         json.dump(combined_data, file, indent=2)
     return combined_data
 
-def normalize_ticker(ticker_symbol):
-    """
-    Normalizes various ticker formats to match the API's ticker format.
 
-    :param ticker_symbol: The ticker symbol to normalize (e.g., 'btcusdt', 'btc-usdt', 'btc')
-    :return: The normalized ticker symbol (e.g., 'BTC/USDT PERP')
-    """
+async def impute_market_ids(market_ids):
+    lst = []
+    for market_id in market_ids:
+        if validate_market_id(market_id):
+            lst.append(market_id)
+        else:
+            lst.append(await get_market_id(market_id))
+    return lst        
 
-    ticker_symbol = ticker_symbol.strip().upper()
-    ticker_symbol = re.sub(r'[^A-Z0-9/]', '', ticker_symbol)
-
-    # Handle special cases
-    if '/' in ticker_symbol:
-        base, quote = ticker_symbol.split('/', 1)
-    elif '-' in ticker_symbol:
-        base, quote = ticker_symbol.split('-', 1)
-    elif 'USDT' in ticker_symbol:
-        base = ticker_symbol.replace('USDT', '')
-        quote = 'USDT'
+async def impute_market_id(market_id):
+    if validate_market_id(market_id):
+        return market_id
     else:
-        # Default to USDT if no quote currency is provided
-        base = ticker_symbol
-        quote = 'USDT'
-
-    # Construct the normalized ticker
-    normalized_ticker = f"{base}/{quote} PERP"
-    return normalized_ticker
-
+        return await get_market_id(market_id)

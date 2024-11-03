@@ -92,7 +92,7 @@ class FunctionSchemaLoader:
             except Exception as e:
                 print(f"Error loading schema from {path}: {str(e)}")
                 
-        return combined_schemas
+        return combined_schemas["functions"]
 
     @staticmethod
     def validate_schema(schema: dict) -> bool:
@@ -131,8 +131,7 @@ class FunctionExecutor:
             if not method:
                 return {"error": f"Method {method_name} not found in {client_type} client"}
             
-            result = await method(**arguments)
-            return {"success": True, "result": result}
+            return await method(**arguments)
             
         except Exception as e:
             return {

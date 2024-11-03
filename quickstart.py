@@ -10,113 +10,12 @@ import requests
 import argparse
 import json
 from decimal import Decimal
-from typing import Dict, Optional, Literal
-import secrets
-from eth_account import Account
-import yaml
-from pyinjective.wallet import PrivateKey
+from typing import Dict, Optional
+from app.agent_manager import AgentManager
+
 
 # Initialize colorama for cross-platform colored output
 colorama.init()
-
-NetworkType = Literal["mainnet", "testnet"]
-
-class AgentManager:
-    """Manages multiple trading agents and their private keys"""
-    
-    def __init__(self, config_path: str = "agents_config.yaml"):
-        self.config_path = config_path
-        self.agents: Dict[str, dict] = self._load_agents()
-        self.current_agent: Optional[str] = None
-        self.current_network: NetworkType = "testnet"  # Default to testnet for safety
-        
-    def _load_agents(self) -> Dict[str, dict]:
-        """Load agents from config file"""
-        if os.path.exists(self.config_path):
-            with open(self.config_path, 'r') as f:
-                config = yaml.safe_load(f) or {}
-                # Migrate old config format if necessary
-                if isinstance(config, dict):
-                    if "agents" in config:
-                        return config
-                    else:
-                        return {"agents": config, "network": "testnet"}
-                return {"agents": {}, "network": "testnet"}
-        return {"agents": {}, "network": "testnet"}
-        
-    def _save_agents(self):
-        """Save agents to config file"""
-        config = {
-            "agents": self.agents,
-            "network": self.current_network
-        }
-        with open(self.config_path, 'w') as f:
-            yaml.dump(config, f)
-            
-    def switch_network(self, network: NetworkType):
-        """Switch between mainnet and testnet"""
-        if network not in ["mainnet", "testnet"]:
-            raise ValueError("Network must be either 'mainnet' or 'testnet'")
-        self.current_network = network
-        self._save_agents()
-
-    def get_current_network(self) -> NetworkType:
-        """Get current network"""
-        return self.current_network
-
-    def create_agent(self, name: str) -> dict:
-        """Create a new agent with a private key"""
-        if name in self.agents:
-            raise ValueError(f"Agent '{name}' already exists")
-            
-        # Generate new private key
-        private_key = str(secrets.token_hex(32))
-        inj_pub_key = PrivateKey.from_hex(private_key).to_public_key().to_address().to_acc_bech32()
-        agent_info = {
-            "private_key": private_key,
-            "address": str(inj_pub_key),
-            "created_at": datetime.now().isoformat(),
-            "network": self.current_network  # Store the network this agent was created on
-        }
-        
-        self.agents[name] = agent_info
-        self._save_agents()
-        return agent_info
-        
-    def delete_agent(self, name: str):
-        """Delete an existing agent"""
-        if name not in self.agents:
-            raise ValueError(f"Agent '{name}' not found")
-            
-        del self.agents[name]
-        if self.current_agent == name:
-            self.current_agent = None
-        self._save_agents()
-        
-    def switch_agent(self, name: str):
-        """Switch to a different agent"""
-        if name not in self.agents:
-            raise ValueError(f"Agent '{name}' not found")
-        
-        # Check if agent's network matches current network
-        agent_network = self.agents[name].get("network", "testnet")
-        if agent_network != self.current_network:
-            raise ValueError(f"Agent '{name}' is configured for {agent_network}. Please switch networks first.")
-            
-        self.current_agent = name
-        
-    def get_current_agent(self) -> Optional[dict]:
-        """Get current agent information"""
-        if self.current_agent:
-            return self.agents[self.current_agent]
-        return None
-        
-    def list_agents(self) -> Dict[str, dict]:
-        """List all available agents"""
-        print(self.agents.items())
-        return {name: info for name, info in self.agents.items() 
-                if info.get("network", "testnet") == self.current_network}
-
 class InjectiveCLI:
     """Enhanced CLI interface with agent management"""
     
@@ -140,6 +39,15 @@ class InjectiveCLI:
             sys.stdout.flush()
             time.sleep(0.1)
             i = (i + 1) % len(animation)
+    def list_agents_by_network(self, agents, environment):
+        if not agents and self.agent_manager.current_network==environment:
+            print(f"{Fore.YELLOW}No agents configured for {self.agent_manager.get_current_network().upper()}{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.CYAN}Available Agents on {self.agent_manager.get_current_network().upper()}:{Style.RESET_ALL}")
+            for name, info in agents.items():
+                current = "*" if name == self.agent_manager.current_agent else " "
+                print(f"{current} {name}: {info['address']}")
+            return True
 
     def format_response(self, response_text, response_type=None):
         """Format and clean up the response text based on type."""
@@ -255,9 +163,6 @@ class InjectiveCLI:
         print("General: quit, clear, help, history, ping, debug, session")
         print("Network: switch_network [mainnet|testnet]")
         print("Agents: create_agent, delete_agent, switch_agent, list_agents")
-        print("Trading: place_limit_order, place_market_order, cancel_order")
-        print("Banking: check_balance, transfer")
-        print("Staking: stake_tokens")
         print("=" * 80 + Style.RESET_ALL)
         
     def handle_agent_commands(self, command: str, args: str) -> bool:
@@ -301,16 +206,11 @@ class InjectiveCLI:
                 return True
                 
             elif command == "list_agents":
-                agents = self.agent_manager.list_agents()
-                if not agents:
-                    print(f"{Fore.YELLOW}No agents configured for {self.agent_manager.get_current_network().upper()}{Style.RESET_ALL}")
-                else:
-                    print(f"{Fore.CYAN}Available Agents on {self.agent_manager.get_current_network().upper()}:{Style.RESET_ALL}")
-                    for name, info in agents.items():
-                        current = "*" if name == self.agent_manager.current_agent else " "
-                        print(f"{current} {name}: {info['address']}")
-                return True
-                
+                #agents = self.agent_manager.list_agents()
+                mainnet_agents, testnet_agents = self.agent_manager.get_agent_based_on_network()
+                if self.agent_manager.current_network == "mainnet": return self.list_agents_by_network(mainnet_agents, "mainnet")
+                else: return self.list_agents_by_network(testnet_agents, "testnet")
+        
         except Exception as e:
             print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
             return True
@@ -328,13 +228,14 @@ class InjectiveCLI:
             
             # Add current agent information to request if available
             current_agent = self.agent_manager.get_current_agent()
+            print(data, current_agent)
             if current_agent and data:
                 data['agent_key'] = current_agent['private_key']
                 data['environment'] = self.agent_manager.get_current_network()
-                data['agent_id'] = current_agent['agent_id']
-
+                data['agent_id'] = current_agent['address']
             else:
-                response = requests.post(url, json=data, params=params, headers=headers, timeout=30)
+                return 
+            response = requests.post(url, json=data, params=params, headers=headers, timeout=30)
             
             response.raise_for_status()
             return response.json()
@@ -370,11 +271,10 @@ class InjectiveCLI:
                     continue
                     
                 # Check if agent is selected for trading commands
-                if command in ['place_limit_order', 'place_market_order', 'cancel_order', 'transfer', 'stake_tokens']:
-                    if not self.agent_manager.get_current_agent():
-                        print(f"{Fore.RED}Error: No agent selected. Use 'switch_agent' to select an agent.{Style.RESET_ALL}")
-                        continue
-                
+                if not self.agent_manager.get_current_agent():
+                    print(f"{Fore.RED}Error: No agent selected. Use 'switch_agent' to select an agent.{Style.RESET_ALL}")
+                    continue
+            
                 self.animation_stop = False
                 animation_thread = threading.Thread(target=self.display_typing_animation)
                 animation_thread.daemon = True
@@ -382,17 +282,18 @@ class InjectiveCLI:
                 agent = self.agent_manager.get_current_agent()
                 # Make API request to the chat endpoint
                 try:
-                    result = self.make_request('POST', '/chat', {
+                    print(self.agent_manager.get_current_network())
+                    result = self.make_request('/chat', {
                         'message': user_input,
                         'session_id': self.session_id,
                         'agent_id': agent["address"],
                         'agent_key': agent["private_key"],
-                        'environment': agent["environment"]
+                        'environment': self.agent_manager.get_current_network()
                         
                     })
                     
                     self.animation_stop = True
-                    time.sleep(0.2)
+                    time.sleep(0.6)
                     self.display_response(result.get('response'), result if self.debug else None)
                     
                 except Exception as e:

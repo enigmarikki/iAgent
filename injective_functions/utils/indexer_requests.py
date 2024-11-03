@@ -1,6 +1,6 @@
 import aiohttp
-from typing import Dict
-from injective_functions.utils.helpers import normalize_ticker
+from typing import Dict, Tuple
+import re
 #This is expected to return a (kv) pair
 async def fetch_decimal_denoms(is_mainnet: bool) -> Dict[str, int]:
     #default url
@@ -19,6 +19,72 @@ async def fetch_decimal_denoms(is_mainnet: bool) -> Dict[str, int]:
                 response_dic[denom["denom"]] = denom["decimals"]
     
     return response_dic
+
+
+def extract_market_info(market_id: str) -> Tuple[str, str, str]:
+    """
+    Extracts base currency, quote currency and market type from market identifier.
+    
+    :param market_id: Market identifier (e.g., 'btcusdt-perp', 'btcusdt', 'eth/usdt')
+    :return: Tuple of (base_currency, quote_currency, market_type)
+    """
+    if not market_id:
+        raise ValueError("Market ID cannot be empty")
+    
+    # Convert to lowercase and remove spaces
+    market = market_id.lower().strip()
+    
+    # Check for perpetual market
+    is_perp = bool(re.search(r'[/-]?perp(etual)?|futures?|swap', market, re.IGNORECASE))
+    
+    # Handle concatenated format with -perp suffix (e.g., btcusdt-perp)
+    if is_perp:
+        # Remove the perp suffix first
+        market = re.sub(r'[/-]?(perp(etual)?|futures?|swap)[/-]?', '', market, re.IGNORECASE)
+    
+    # Handle different separator cases
+    if '/' in market:
+        parts = market.split('/')
+    elif '-' in market:
+        parts = market.split('-')
+    else:
+        # Handle concatenated format (e.g., btcusdt)
+        if market.endswith('usdt'):
+            parts = [market[:-4], 'usdt']
+        elif market.endswith('inj'):
+            parts = [market[:-3], 'inj']
+        else:
+            # If no known quote currency found, assume it's all base currency
+            parts = [market, 'usdt']
+    
+    # Clean and validate parts
+    if len(parts) < 2:
+        parts.append('usdt')  # Default quote currency
+    
+    base = re.sub(r'[^a-zA-Z0-9]', '', parts[0]).upper()
+    quote = re.sub(r'[^a-zA-Z0-9]', '', parts[1]).upper()
+    
+    if not re.match(r'^[A-Z0-9]{2,10}$', base):
+        raise ValueError(f"Invalid base currency format: {base}")
+    
+    if not quote:
+        quote = 'USDT'
+    
+    market_type = 'PERP' if is_perp else 'SPOT'
+    
+    return base, quote, market_type
+
+def normalize_ticker(ticker_symbol: str) -> str:
+    """
+    Normalizes various ticker formats to match the API's ticker format.
+    Always uses USDT as quote currency.
+    
+    :param ticker_symbol: The ticker symbol to normalize (e.g., 'btc', 'eth', 'btc-perp')
+    :return: The normalized ticker symbol (e.g., 'BTC/USDT PERP')
+    """
+    base, quote, market_type = extract_market_info(ticker_symbol)
+    market_type = f" {market_type}" if market_type == "PERP" else ""
+    return f"{base}/{quote}{market_type}"
 
 async def get_market_id(ticker_symbol: str, network_type: str = "mainnet"):
     """

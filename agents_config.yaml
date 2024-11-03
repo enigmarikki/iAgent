@@ -1,13 +1,5 @@
-agents:
-  agent1:
-    address: inj1f23kkpn558cn4tw2aurcdg77fu84gq67cymvqp
-    created_at: '2024-11-03T08:20:08.171722'
-    network: testnet
-    private_key: 48159dd8a8a45b7269490427881642921e1fafb7cf1694fbfa58709e5c77b1bd
-  agents:
-    agent1:
-      address: inj148vz7qw9p26ryp7agl4nt7tsf00lz3lmqnl800
-      created_at: '2024-10-31T23:18:44.901126'
-      private_key: 18f3ab7c016c2b6d15b70e9ec4d03d1325e82334030affa88deb81ddef23edd3
-  network: testnet
-network: testnet
+agent2:
+  address: inj1m36ktsa9ccsvmylcr4hm0sv7g6a3qr8np082ee
+  created_at: '2024-11-03T13:24:43.285937'
+  network: mainnet
+  private_key: f624538775a0b2cefc2b7df4977d0203f88e5e1944756cf7f0e52d7c4eb1903a
