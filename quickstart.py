@@ -11,79 +11,11 @@ import argparse
 import json
 from decimal import Decimal
 from typing import Dict, Optional
-import secrets
-from eth_account import Account
-import yaml
-from pyinjective.wallet import PrivateKey
+from app.agent_manager import AgentManager
+
 
 # Initialize colorama for cross-platform colored output
 colorama.init()
-
-class AgentManager:
-    """Manages multiple trading agents and their private keys"""
-    
-    def __init__(self, config_path: str = "agents_config.yaml"):
-        self.config_path = config_path
-        self.agents: Dict[str, dict] = self._load_agents()
-        self.current_agent: Optional[str] = None
-        
-    def _load_agents(self) -> Dict[str, dict]:
-        """Load agents from config file"""
-        if os.path.exists(self.config_path):
-            with open(self.config_path, 'r') as f:
-                return yaml.safe_load(f) or {}
-        return {}
-        
-    def _save_agents(self):
-        """Save agents to config file"""
-        with open(self.config_path, 'w') as f:
-            yaml.dump(self.agents, f)
-            
-    def create_agent(self, name: str) -> dict:
-        """Create a new agent with a private key"""
-        if name in self.agents:
-            raise ValueError(f"Agent '{name}' already exists")
-            
-        # Generate new private key
-        private_key = str(secrets.token_hex(32))
-        account = Account.from_key(private_key)
-        inj_pub_key = PrivateKey.from_hex(private_key).to_public_key().to_address().to_acc_bech32()
-        agent_info = {
-            "private_key": private_key,
-            "address": str(inj_pub_key),
-            "created_at": datetime.now().isoformat()
-        }
-        
-        self.agents[name] = agent_info
-        self._save_agents()
-        return agent_info
-        
-    def delete_agent(self, name: str):
-        """Delete an existing agent"""
-        if name not in self.agents:
-            raise ValueError(f"Agent '{name}' not found")
-            
-        del self.agents[name]
-        if self.current_agent == name:
-            self.current_agent = None
-        self._save_agents()
-        
-    def switch_agent(self, name: str):
-        """Switch to a different agent"""
-        if name not in self.agents:
-            raise ValueError(f"Agent '{name}' not found")
-        self.current_agent = name
-        
-    def get_current_agent(self) -> Optional[dict]:
-        """Get current agent information"""
-        if self.current_agent:
-            return self.agents[self.current_agent]
-        return None
-        
-    def list_agents(self) -> Dict[str, dict]:
-        """List all available agents"""
-        return self.agents
-
 class InjectiveCLI:
     """Enhanced CLI interface with agent management"""
     
@@ -107,6 +39,15 @@ class InjectiveCLI:
             sys.stdout.flush()
             time.sleep(0.1)
             i = (i + 1) % len(animation)
+    def list_agents_by_network(self, agents, environment):
+        if not agents and self.agent_manager.current_network==environment:
+            print(f"{Fore.YELLOW}No agents configured for {self.agent_manager.get_current_network().upper()}{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.CYAN}Available Agents on {self.agent_manager.get_current_network().upper()}:{Style.RESET_ALL}")
+            for name, info in agents.items():
+                current = "*" if name == self.agent_manager.current_agent else " "
+                print(f"{current} {name}: {info['address']}")
+            return True
 
     def format_response(self, response_text, response_type=None):
         """Format and clean up the response text based on type."""
@@ -127,19 +68,7 @@ class InjectiveCLI:
             pass
         
         # Default formatting for regular messages
-        lines = response_text.split('\n')
-        formatted_lines = []
-        in_code_block = False
-        
-        for line in lines:
-            if line.strip().startswith('```'):
-                in_code_block = not in_code_block
-            formatted_lines.append(line)
-        
-        if in_code_block:
-            formatted_lines.append('```')
-        
-        return '\n'.join(formatted_lines)
+        return response_text
 
     def format_transaction_response(self, response):
         """Format blockchain transaction response."""
@@ -220,33 +149,43 @@ class InjectiveCLI:
         print(f"{Back.BLUE}{Fore.WHITE} Injective Chain Interactive Agent CLI Client {Style.RESET_ALL}")
         print(f"{Fore.CYAN}Connected to: {self.api_url}")
         print(f"Session ID: {self.session_id}")
+        print(f"Current Network: {self.agent_manager.get_current_network().upper()}")
         
         current_agent = self.agent_manager.get_current_agent()
         if current_agent:
             print(f"Current Agent: {self.agent_manager.current_agent}")
             print(f"Agent Address: {current_agent['address']}")
         else:
-            print(f"{Fore.YELLOW}No agent selected please select an agent{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}No agent selected. Please select an agent{Style.RESET_ALL}")
             
-        print(f"Network: TESTNET,MAINNET")
-        print("=" * 80)
+        print(f"{Fore.CYAN}=" * 80)
         print(f"{Fore.YELLOW}Available Commands:")
         print("General: quit, clear, help, history, ping, debug, session")
+        print("Network: switch_network [mainnet|testnet]")
         print("Agents: create_agent, delete_agent, switch_agent, list_agents")
-        print("Trading: place_limit_order, place_market_order, cancel_order")
-        print("Banking: check_balance, transfer")
-        print("Staking: stake_tokens")
         print("=" * 80 + Style.RESET_ALL)
         
     def handle_agent_commands(self, command: str, args: str) -> bool:
         """Handle agent-related commands"""
         try:
-            if command == "create_agent":
+            if command == "switch_network":
+                if not args or args.lower() not in ["mainnet", "testnet"]:
+                    print(f"{Fore.RED}Error: Please specify 'mainnet' or 'testnet'{Style.RESET_ALL}")
+                    return True
+                    
+                # Clear current agent when switching networks
+                self.agent_manager.current_agent = None
+                self.agent_manager.switch_network(args.lower())
+                print(f"{Fore.GREEN}Switched to {args.upper()}{Style.RESET_ALL}")
+                self.display_banner()
+                return True
+                
+            elif command == "create_agent":
                 if not args:
                     print(f"{Fore.RED}Error: Agent name required{Style.RESET_ALL}")
                     return True
                 agent_info = self.agent_manager.create_agent(args)
-                print(f"{Fore.GREEN}Created agent '{args}'{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}Created agent '{args}' on {self.agent_manager.get_current_network().upper()}{Style.RESET_ALL}")
                 print(f"Address: {agent_info['address']}")
                 return True
                 
@@ -263,27 +202,22 @@ class InjectiveCLI:
                     print(f"{Fore.RED}Error: Agent name required{Style.RESET_ALL}")
                     return True
                 self.agent_manager.switch_agent(args)
-                print(f"{Fore.GREEN}Switched to agent '{args}'{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}Switched to agent '{args}' on {self.agent_manager.get_current_network().upper()}{Style.RESET_ALL}")
                 return True
                 
             elif command == "list_agents":
-                agents = self.agent_manager.list_agents()
-                if not agents:
-                    print(f"{Fore.YELLOW}No agents configured{Style.RESET_ALL}")
-                else:
-                    print(f"{Fore.CYAN}Available Agents:{Style.RESET_ALL}")
-                    for name, info in agents.items():
-                        current = "*" if name == self.agent_manager.current_agent else " "
-                        print(f"{current} {name}: {info['address']}")
-                return True
-                
+                #agents = self.agent_manager.list_agents()
+                mainnet_agents, testnet_agents = self.agent_manager.get_agent_based_on_network()
+                if self.agent_manager.current_network == "mainnet": return self.list_agents_by_network(mainnet_agents, "mainnet")
+                else: return self.list_agents_by_network(testnet_agents, "testnet")
+        
         except Exception as e:
             print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
             return True
             
         return False
         
-    def make_request(self, method: str, endpoint: str, data: Optional[dict] = None, params: Optional[dict] = None) -> dict:
+    def make_request(self, endpoint: str, data: Optional[dict] = None, params: Optional[dict] = None) -> dict:
         """Make API request with current agent information"""
         try:
             url = f"{self.api_url.rstrip('/')}/{endpoint.lstrip('/')}"
@@ -294,16 +228,18 @@ class InjectiveCLI:
             
             # Add current agent information to request if available
             current_agent = self.agent_manager.get_current_agent()
+            print(data, current_agent)
             if current_agent and data:
                 data['agent_key'] = current_agent['private_key']
-                
-            if method.upper() == 'GET':
-                response = requests.get(url, params=params, headers=headers, timeout=30)
+                data['environment'] = self.agent_manager.get_current_network()
+                data['agent_id'] = current_agent['address']
             else:
-                response = requests.post(url, json=data, params=params, headers=headers, timeout=30)
+                return 
+            response = requests.post(url, json=data, params=params, headers=headers, timeout=30)
             
             response.raise_for_status()
             return response.json()
+        
         except requests.exceptions.RequestException as e:
             raise Exception(f"API request failed: {str(e)}")
             
@@ -335,11 +271,10 @@ class InjectiveCLI:
                     continue
                     
                 # Check if agent is selected for trading commands
-                if command in ['place_limit_order', 'place_market_order', 'cancel_order', 'transfer', 'stake_tokens']:
-                    if not self.agent_manager.get_current_agent():
-                        print(f"{Fore.RED}Error: No agent selected. Use 'switch_agent' to select an agent.{Style.RESET_ALL}")
-                        continue
-                
+                if not self.agent_manager.get_current_agent():
+                    print(f"{Fore.RED}Error: No agent selected. Use 'switch_agent' to select an agent.{Style.RESET_ALL}")
+                    continue
+            
                 self.animation_stop = False
                 animation_thread = threading.Thread(target=self.display_typing_animation)
                 animation_thread.daemon = True
@@ -347,16 +282,18 @@ class InjectiveCLI:
                 agent = self.agent_manager.get_current_agent()
                 # Make API request to the chat endpoint
                 try:
-                    result = self.make_request('POST', '/chat', {
+                    print(self.agent_manager.get_current_network())
+                    result = self.make_request('/chat', {
                         'message': user_input,
                         'session_id': self.session_id,
                         'agent_id': agent["address"],
-                        'agent_key': agent["private_key"]
+                        'agent_key': agent["private_key"],
+                        'environment': self.agent_manager.get_current_network()
                         
                     })
                     
                     self.animation_stop = True
-                    time.sleep(0.2)
+                    time.sleep(0.6)
                     self.display_response(result.get('response'), result if self.debug else None)
                     
                 except Exception as e:
