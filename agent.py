@@ -5,9 +5,13 @@ from dotenv import load_dotenv
 from quart import Quart, request, jsonify
 from datetime import datetime
 import argparse
-
 from injective_functions.factory import InjectiveClientFactory
 from injective_functions.utils.helpers import validate_market_id, combine_function_schemas
+from injective_functions.utils.function_helper import (
+    InjectiveFunctionMapper,
+    FunctionSchemaLoader,
+    FunctionExecutor
+)
 from injective_functions.utils.indexer_requests import get_market_id
 import json
 import asyncio
@@ -34,12 +38,8 @@ class InjectiveChatAgent:
         self.conversations = {}
         # Initialize injective agents
         self.agents = {}
-        self.function_schemas = self.load_function_schemas()
-        
-    def load_function_schemas(self):
-        """Load function schemas from JSON file"""
-        dir_list = [
-            "./injective_functions/accounts/accounts_schema.json",
+        schema_paths = [
+            "./injective_functions/account/account_schema.json",
             "./injective_functions/auction/auction_schema.json",
             "./injective_functions/authz/authz_schema.json",
             "./injective_functions/bank/bank_schema.json",
@@ -48,41 +48,40 @@ class InjectiveChatAgent:
             "./injective_functions/token_factory/token_factory_schema.json",
             "./injective_functions/utils/utils_schema.json",
         ]
+        self.function_schemas = FunctionSchemaLoader.load_schemas(schema_paths)    
+    
+    async def initialize_agent(self, agent_id: str, private_key: str, environment: str = "mainnet") -> None:
+        """Initialize Injective clients if they don't exist"""
+        if agent_id not in self.agents:
+            clients = await InjectiveClientFactory.create_all(
+                private_key=private_key,
+                network_type=environment
+            )
+            self.agents[agent_id] = clients
         
-        self.function_schemas = combine_function_schemas(dir_list)
-        
-    async def execute_function(self, function_name: str, arguments: dict, private_key) -> dict:
-        """Execute the appropriate Injective function"""
-        # setup network first
-        
-        try:    
-            if function_name == "place_limit_order":
-                if not validate_market_id(arguments["market_id"]):
-                    arguments["market_id"] = str(await get_market_id(arguments["market_id"]))
-                else:
-                    arguments["market_id"] = arguments["market_id"]
-                return await self.injective_trader.place_limit_order()
-            elif function_name == "place_market_order":
-                if not validate_market_id(arguments["market_id"]):
-                    arguments["market_id"] = str(await get_market_id(arguments["market_id"]))
-                else:
-                    arguments["market_id"] = arguments["market_id"]
+    async def execute_function(self, function_name: str, arguments: dict, agent_id: str) -> dict:
+        """Execute the appropriate Injective function with error handling"""
+        try:
+            # Get the client dictionary for this agent
+            clients = self.agents.get(agent_id)
+            if not clients:
+                return {"error": "Agent not initialized. Please provide valid credentials."}
 
-                return await self.injective_trader.place_market_order(**arguments)
-            #elif function_name == "cancel_order":
-            #    return await self.injective_trader.cancel_order(**arguments)
-            elif function_name == "query_balances":
-                arguments["private_key"] = private_key
-                return await self.injective_bank.query_balances(arguments["denoms"])
-            #FIXME: unify the message parsing
-            elif function_name == "transfer_funds":
-                arguments["private_key"] = private_key
-                return await self.injective_bank.transfer_funds(**arguments)
-            elif function_name == "stake_tokens":
-                arguments["private_key"] = private_key
-                return await stake_tokens(**arguments)
+            return await FunctionExecutor.execute_function(
+                clients=clients,
+                function_name=function_name,
+                arguments=arguments
+            )
+
         except Exception as e:
-            return {"error": str(e)}
+            return {
+                "error": str(e),
+                "success": False,
+                "details": {
+                    "function": function_name,
+                    "arguments": arguments
+                }
+            }
     
     async def get_response(self, 
                            message, 
@@ -91,9 +90,7 @@ class InjectiveChatAgent:
                            agent_id=None,
                            environment="mainnet"):
         """Get response from OpenAI API."""
-        if agent_id not in self.agents:
-            self.agents["agent_id"] = await InjectiveClientFactory.create_all(private_key=private_key, network_type=environment)
-
+        self.initialize_agent(agent_id=agent_id, private_key=private_key, environment=environment)
         try:
             # Initialize conversation history for new sessions
             if session_id not in self.conversations:
@@ -133,7 +130,7 @@ class InjectiveChatAgent:
                 function_args = json.loads(response_message.function_call.arguments)
                 print(function_args)
                 # Execute the function
-                function_response = await self.execute_function(function_name, function_args, private_key)
+                function_response = await self.execute_function(function_name, function_args, agent_id)
                 
                 # Add function call and response to conversation
                 self.conversations[session_id].append({
@@ -241,7 +238,8 @@ async def chat_endpoint():
                 "response": "Please provide a message to continue our conversation.",
                 "session_id": data.get('session_id', 'default'),
                 "agent_id": data.get('agent_id', 'default'),
-                "agent_key": data.get('agent_key', 'default')
+                "agent_key": data.get('agent_key', 'default'),
+                "environment": data.get('environment', 'testnet')
             }), 400
             
         session_id = data.get('session_id', 'default')
