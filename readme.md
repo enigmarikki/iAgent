@@ -31,15 +31,14 @@ All required packages are listed in requirements.txt. Ensure you have Python 3.1
 	pip install -r requirements.txt  
 	```
 3. Running the Agent  
-	3.1 To start the backend on a specified port (default is 5000), run:
+	To start the backend on a specified port (default is 5000), run:  
 	```bash
 	python agent.py --port 5000  
 	```  
-	3.2 Once the agent is running, you can use quickstart.py to connect to it and interact with it via URL:
+	Once the agent is running, you can use quickstart.py to connect to it and interact with it via URL:
 	```bash
 	python quickstart.py --url http://0.0.0.0:5000
 	```
-
 
 ## Contributing
 Contributions are welcome! Please fork the repository and submit a pull request.
