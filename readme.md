@@ -30,7 +30,11 @@ All required packages are listed in requirements.txt. Ensure you have Python 3.1
 	```bash  
 	pip install -r requirements.txt  
 	```
-3. Running the Agent  
+3. Setup OpenAI api Key
+	```bash
+	export OPENAI_API_KEY="your_openai_api_key_here"
+	```
+4. Running the agent  
 	To start the backend on a specified port (default is 5000), run:  
 	```bash
 	python agent.py --port 5000  
@@ -40,6 +44,39 @@ All required packages are listed in requirements.txt. Ensure you have Python 3.1
 	python quickstart.py --url http://0.0.0.0:5000
 	```
 
+# AI Agent Usage Guide
+
+This guide will help you get started with the AI Agent, including how to use commands, switch networks, and manage agents.
+
+## Commands Overview
+
+The AI Agent supports several commands categorized into general actions, network configurations, and agent management.
+
+### General Commands
+| Command   | Description                                |
+|-----------|--------------------------------------------|
+| `quit`    | Exit the agent session.                    |
+| `clear`   | Clear the current session output.          |
+| `help`    | Display help information.                  |
+| `history` | Show command history in the session.       |
+| `ping`    | Check the agent’s status.                  |
+| `debug`   | Toggle debugging mode.                     |
+| `session` | Display current session details.           |
+
+### Network Commands
+| Command             | Description                                        |
+|---------------------|----------------------------------------------------|
+| `switch_network`    | Switch between `mainnet` and `testnet` environments.|
+
+### Agent Management Commands
+| Command              | Description                                   |
+|----------------------|-----------------------------------------------|
+| `create_agent`       | Create a new AI agent.                        |
+| `delete_agent`       | Delete an existing AI agent.                  |
+| `switch_agent`       | Switch to a different AI agent.               |
+| `list_agents`        | Display a list of available agents.           
+  
+    
 ## Contributing
 Contributions are welcome! Please fork the repository and submit a pull request.
 
