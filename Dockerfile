@@ -19,7 +19,7 @@ COPY .env /app/.env
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the agent script
-COPY agent.py .
+COPY agent_server.py .
 
 # Run the agent script
-CMD ["python", "agent.py", "--port", "5000"]
+CMD ["python", "agent_server.py", "--port", "5000"]
