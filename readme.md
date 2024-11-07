@@ -37,7 +37,7 @@ All required packages are listed in requirements.txt. Ensure you have Python 3.1
 4. Running the agent  
 	To start the backend on a specified port (default is 5000), run:  
 	```bash
-	python agent.py --port 5000  
+	python agent_server.py --port 5000  
 	```  
 	Once the agent is running, you can use quickstart.py to connect to it and interact with it via URL:
 	```bash
