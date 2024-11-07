@@ -301,6 +301,24 @@
           }
       },
       {
+        "name": "get_spot_orderbook",
+        "description": "Get orderbook for a spot market",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "market_id": {
+                    "type": "string",
+                    "description": "spot market ID"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Limit the number of orders returned"
+                }
+            },
+            "required": ["market_id"]
+        }
+    },
+      {
           "name": "trader_derivative_orders",
           "description": "Get trader's derivative orders in a market",
           "parameters": {

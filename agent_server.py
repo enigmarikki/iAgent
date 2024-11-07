@@ -135,7 +135,7 @@ class InjectiveChatAgent:
                     3. Always confirm before executing any functions
                     
                     For general questions, provide informative responses.
-                    When users want to perform actions, describe the action and ask for confirmation.""",
+                    When users want to perform actions, describe the action and ask for confirmation but for fetching data you dont have to ask for confirmation.""",
                     }
                 ]
                 + self.conversations[session_id],

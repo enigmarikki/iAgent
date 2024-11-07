@@ -1,7 +1,6 @@
-from injective_functions.utils.initializers import ChainInteractor
-from injective_functions.utils.indexer_requests import fetch_decimal_denoms
-from typing import Dict, List
+from typing import Dict
 from injective_functions.base import InjectiveBase
+from injective_functions.utils.helpers import detailed_exception_info
 
 # TODO: Convert raw exchange message formats to human readable
 
@@ -28,7 +27,7 @@ class InjectiveTokenFactory(InjectiveBase):
             res = await self.chain_client.message_broadcaster.broadcast([msg])
             return {"success": True, "result": res}
         except Exception as e:
-            return {"success": False, "result": str(e)}
+            return {"success": False, "result": detailed_exception_info(e)}
 
     async def mint(self, denom: str, amount: int) -> Dict:
         try:
@@ -43,7 +42,7 @@ class InjectiveTokenFactory(InjectiveBase):
             res = await self.chain_client.message_broadcaster.broadcast([msg])
             return {"success": True, "result": res}
         except Exception as e:
-            return {"success": False, "result": str(e)}
+            return {"success": False, "result": detailed_exception_info(e)}
 
     async def burn(self, denom: str, amount: int) -> Dict:
         try:
@@ -58,7 +57,7 @@ class InjectiveTokenFactory(InjectiveBase):
             res = await self.chain_client.message_broadcaster.broadcast([msg])
             return {"success": True, "result": res}
         except Exception as e:
-            return {"success": False, "result": str(e)}
+            return {"success": False, "result": detailed_exception_info(e)}
 
     async def set_denom_metadata(
         self,
@@ -91,4 +90,4 @@ class InjectiveTokenFactory(InjectiveBase):
             res = await self.chain_client.message_broadcaster.broadcast([msg])
             return {"success": True, "result": res}
         except Exception as e:
-            return {"success": False, "result": str(e)}
+            return {"success": False, "result": detailed_exception_info(e)}

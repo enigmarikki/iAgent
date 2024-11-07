@@ -63,3 +63,20 @@ async def impute_market_id(market_id):
         return market_id
     else:
         return await get_market_id(market_id)
+
+
+def detailed_exception_info(e) -> Dict:
+    return {
+        "success": False,
+        "error": {
+            "message": str(e),
+            "type": type(e).__name__,
+            "module": e.__class__.__module__,
+            "line_number": e.__traceback__.tb_lineno if e.__traceback__ else None,
+            "details": {
+                "args": getattr(e, "args", None),
+                "cause": str(e.__cause__) if e.__cause__ else None,
+                "context": str(e.__context__) if e.__context__ else None,
+            },
+        },
+    }

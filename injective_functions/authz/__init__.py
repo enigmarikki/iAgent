@@ -1,4 +1,4 @@
-from decimal import Decimal
+from injective_functions.utils.helpers import detailed_exception_info
 from injective_functions.base import InjectiveBase
 from typing import Dict, List
 
@@ -46,4 +46,4 @@ class InjectiveAuthz(InjectiveBase):
                 "result": res,
             }
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": detailed_exception_info(e)}

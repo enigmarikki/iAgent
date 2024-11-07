@@ -2,6 +2,7 @@ from decimal import Decimal
 from injective_functions.base import InjectiveBase
 from typing import Dict, List
 from injective_functions.utils.indexer_requests import fetch_decimal_denoms
+from injective_functions.utils.helpers import detailed_exception_info
 
 
 class InjectiveBank(InjectiveBase):
@@ -54,23 +55,7 @@ class InjectiveBank(InjectiveBase):
             else:
                 return {"success": True, "result": human_readable_balances}
         except Exception as e:
-            error_info = {
-                "success": False,
-                "error": {
-                    "message": str(e),
-                    "type": type(e).__name__,
-                    "module": e.__class__.__module__,
-                    "line_number": e.__traceback__.tb_lineno
-                    if e.__traceback__
-                    else None,
-                    "details": {
-                        "args": getattr(e, "args", None),
-                        "cause": str(e.__cause__) if e.__cause__ else None,
-                        "context": str(e.__context__) if e.__context__ else None,
-                    },
-                },
-            }
-            return {"success": False, "result": error_info}
+            return {"success": False, "error": detailed_exception_info(e)}
 
     async def query_spendable_balances(self, denom_list: List[str] = None) -> Dict:
         try:
@@ -106,7 +91,7 @@ class InjectiveBank(InjectiveBase):
                 return {"success": True, "result": human_readable_balances}
 
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": detailed_exception_info(e)}
 
     async def query_total_supply(self, denom_list: List[str] = None) -> Dict:
         try:
@@ -140,4 +125,4 @@ class InjectiveBank(InjectiveBase):
                 return {"success": True, "result": human_readable_supply}
 
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": detailed_exception_info(e)}

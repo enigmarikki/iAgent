@@ -5,6 +5,7 @@ from pyinjective.core.network import Network
 from pyinjective.core.broadcaster import MsgBroadcasterWithPk
 from pyinjective.transaction import Transaction
 from pyinjective.wallet import PrivateKey
+from injective_functions.utils.helpers import detailed_exception_info
 
 
 class ChainInteractor:
@@ -20,35 +21,25 @@ class ChainInteractor:
         self.client = None
         self.composer = None
         self.message_broadcaster = None
-        self.priv_key = None
-        self.pub_key = None
-        self.address = None
-        self._initialized = False
-
-    async def init_client(self):
-        """Initialize the Injective client and required components"""
-        if self._initialized:
-            return
-        self.client = AsyncClient(self.network)
-        self.composer = await self.client.composer()
-        await self.client.sync_timeout_height()
 
         # Initialize account
         self.priv_key = PrivateKey.from_hex(self.private_key)
         self.pub_key = self.priv_key.to_public_key()
         self.address = self.pub_key.to_address()
-        print("fetch account")
+
+    async def init_client(self):
+        """Initialize the Injective client and required components"""
+        self.client = AsyncClient(self.network)
+        self.composer = await self.client.composer()
+        await self.client.sync_timeout_height()
         await self.client.fetch_account(self.address.to_acc_bech32())
         self.message_broadcaster = MsgBroadcasterWithPk.new_using_simulation(
             network=self.network, private_key=self.private_key
         )
-        print("fetched account")
-        self._initialized = True
 
     async def build_and_broadcast_tx(self, msg):
         """Common function to build and broadcast transactions"""
         try:
-
             self.init_client()
             tx = (
                 Transaction()
@@ -101,4 +92,4 @@ class ChainInteractor:
                 "gas_fee": f"{gas_fee} INJ",
             }
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": detailed_exception_info(e)}

@@ -1,6 +1,6 @@
 import secrets
 from typing import Dict, Literal, Optional
-import datetime
+from datetime import datetime
 import os
 import yaml
 from pyinjective.wallet import PrivateKey

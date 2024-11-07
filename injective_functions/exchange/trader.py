@@ -82,7 +82,6 @@ class InjectiveTrading(InjectiveBase):
     async def cancel_derivative_limit_order(
         self, market_id: str, subaccount_idx: int, order_hash: str
     ):
-
         market_id = await impute_market_id(market_id)
         subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
         msg = self.chain_client.composer.msg_cancel_derivative_order(
@@ -151,6 +150,7 @@ class InjectiveTrading(InjectiveBase):
     async def cancel_spot_limit_order(
         self, market_id: str, subaccount_idx: int, order_hash: str
     ):
+        await self.chain_client.init_client()
 
         market_id = await impute_market_id(market_id)
         subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
