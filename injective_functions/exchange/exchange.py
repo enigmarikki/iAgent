@@ -35,7 +35,8 @@ class InjectiveExchange(InjectiveBase):
                                 / denom_decimals[denom]
                             ),
                             "total_balance": str(
-                                deposits[denom]["totalBalance"] / denom_decimals[denom]
+                                deposits[denom]["totalBalance"]
+                                / 10 ** denom_decimals[denom]
                             ),
                         }
                     else:
@@ -48,10 +49,10 @@ class InjectiveExchange(InjectiveBase):
                 for denom, deposit in deposits.items():
                     human_readable_deposits[deposit] = {
                         "available_balance": str(
-                            deposit["availableBalance"] / denom_decimals[denom]
+                            deposit["availableBalance"] / 10 ** denom_decimals[denom]
                         ),
                         "total_balance": str(
-                            deposit["totalBalance"] / denom_decimals[denom]
+                            deposit["totalBalance"] / 10 ** denom_decimals[denom]
                         ),
                     }
 
@@ -218,7 +219,7 @@ class InjectiveExchange(InjectiveBase):
                 position_map[position["market_id"]] = position["position"]
 
             filtered_positions = dict()
-            if len(market_ids) > 0:
+            if market_ids != None:
                 for market_id in market_ids:
                     filtered_positions["market_id"] = position_map[market_id]
                 return {"success": True, "result": position_map}
@@ -246,8 +247,8 @@ class InjectiveExchange(InjectiveBase):
                 min_quantity_tick_size=Decimal(min_quantity_tick),
                 min_notional=Decimal(min_notional),
             )
-            await self.chain_client.build_and_broadcast_tx(msg)
-
+            res = await self.chain_client.message_broadcaster.broadcast([msg])
+            return {"success": True, "result": res}
         except Exception as e:
             return {"success": False, "result": str(e)}
 
@@ -269,6 +270,7 @@ class InjectiveExchange(InjectiveBase):
     ) -> Dict:
         try:
 
+            self.chain_client.init_client()
             msg = self.chain_client.composer.msg_instant_perpetual_market_launch(
                 sender=self.chain_client.address.to_acc_bech32(),
                 ticker=ticker,

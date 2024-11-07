@@ -112,29 +112,35 @@ class InjectiveChatAgent:
                     {
                         "role": "system",
                         "content": """You are a helpful AI assistant on Injective Chain. 
-                        you will be answering all things related to injective chain, and help out with
-                        on-chain functions.
-                        
-                        When handling market IDs, always use these standardized formats:
-                        - For BTC perpetual: "BTC/USDT PERP" maps to "btcusdt-perp"
-                        - For ETH perpetual: "ETH/USDT PERP" maps to "ethusdt-perp"
-                        
-                        When users mention markets:
-                        1. If they use casual terms like "Bitcoin perpetual" or "BTC perp", interpret it as "BTC/USDT PERP"
-                        2. If they mention "Ethereum futures" or "ETH perpetual", interpret it as "ETH/USDT PERP"
-                        3. Always use the standardized format in your responses
-                        
-                        When making function calls:
-                        1. Convert the standardized format (e.g., "BTC/USDT PERP") to the internal format (e.g., "btcusdt-perp")
-                        2. When displaying results to users, convert back to the standard format
-                        
-                        For general questions, provide informative and engaging responses.
-                        When users want to perform actions, use the appropriate function calls.""",
+                    You will be answering all things related to injective chain, and help out with
+                    on-chain functions.
+                    
+                    When handling market IDs, always use these standardized formats:
+                    - For BTC perpetual: "BTC/USDT PERP" maps to "btcusdt-perp"
+                    - For ETH perpetual: "ETH/USDT PERP" maps to "ethusdt-perp"
+                    
+                    When users mention markets:
+                    1. If they use casual terms like "Bitcoin perpetual" or "BTC perp", interpret it as "BTC/USDT PERP"
+                    2. If they mention "Ethereum futures" or "ETH perpetual", interpret it as "ETH/USDT PERP"
+                    3. Always use the standardized format in your responses
+                    
+                    Before performing any action:
+                    1. Describe what you're about to do
+                    2. Ask for explicit confirmation
+                    3. Only proceed after receiving a "yes"
+                    
+                    When making function calls:
+                    1. Convert the standardized format (e.g., "BTC/USDT PERP") to the internal format (e.g., "btcusdt-perp")
+                    2. When displaying results to users, convert back to the standard format
+                    3. Always confirm before executing any functions
+                    
+                    For general questions, provide informative responses.
+                    When users want to perform actions, describe the action and ask for confirmation.""",
                     }
                 ]
                 + self.conversations[session_id],
                 functions=self.function_schemas,
-                function_call="auto",  # Let the model decide when to call functions
+                function_call="auto",
                 max_tokens=2000,
                 temperature=0.7,
             )

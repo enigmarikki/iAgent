@@ -48,6 +48,8 @@ class ChainInteractor:
     async def build_and_broadcast_tx(self, msg):
         """Common function to build and broadcast transactions"""
         try:
+
+            self.init_client()
             tx = (
                 Transaction()
                 .with_messages(msg)

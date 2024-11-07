@@ -1,6 +1,7 @@
 import uuid
 from decimal import Decimal
 from injective_functions.base import InjectiveBase
+from injective_functions.utils.helpers import impute_market_id
 
 # TODO: serve endpoints of trader functions via an api
 # to isolate functions as much as possible
@@ -21,7 +22,7 @@ class InjectiveTrading(InjectiveBase):
         subaccount_idx: int,
     ):
         """Place a limit order"""
-
+        market_id = await impute_market_id(market_id)
         self.subaccount_id = self.chain_client.address.get_subaccount_id(
             index=subaccount_idx
         )
@@ -49,6 +50,7 @@ class InjectiveTrading(InjectiveBase):
     ):
         """Place a market order"""
 
+        market_id = await impute_market_id(market_id)
         self.subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
         # For market orders, we'll use the current price as an estimate
         # this gets bbo and mid from composer.
@@ -81,6 +83,7 @@ class InjectiveTrading(InjectiveBase):
         self, market_id: str, subaccount_idx: int, order_hash: str
     ):
 
+        market_id = await impute_market_id(market_id)
         subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
         msg = self.chain_client.composer.msg_cancel_derivative_order(
             sender=self.chain_client.address.to_acc_bech32(),
@@ -100,6 +103,7 @@ class InjectiveTrading(InjectiveBase):
     ):
         """Place a limit order"""
 
+        market_id = await impute_market_id(market_id)
         self.subaccount_id = self.chain_client.address.get_subaccount_id(
             index=subaccount_idx
         )
@@ -121,6 +125,7 @@ class InjectiveTrading(InjectiveBase):
     ):
         """Place a market order"""
 
+        market_id = await impute_market_id(market_id)
         self.subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
         # For market orders, we'll use the current price as an estimate
         # this gets bbo and mid from composer.
@@ -147,6 +152,7 @@ class InjectiveTrading(InjectiveBase):
         self, market_id: str, subaccount_idx: int, order_hash: str
     ):
 
+        market_id = await impute_market_id(market_id)
         subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
         msg = self.chain_client.composer.msg_cancel_spot_order(
             sender=self.chain_client.address.to_acc_bech32(),

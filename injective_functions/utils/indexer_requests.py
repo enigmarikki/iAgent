@@ -1,26 +1,64 @@
 import aiohttp
 from typing import Dict, Tuple
 import re
+import json
+import logging
 
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # This is expected to return a (kv) pair
 async def fetch_decimal_denoms(is_mainnet: bool) -> Dict[str, int]:
     # default url
-    request_url = ""
-    if is_mainnet:
-        request_url = "https://sentry.lcd.injective.network/injective/exchange/v1beta1/exchange/denom_decimals"
-    else:
-        request_url = "https://testnet.lcd.injective.network/injective/exchange/v1beta1/exchange/denom_decimals"
+    request_url = (
+        "https://sentry.lcd.injective.network/injective/exchange/v1beta1/exchange/denom_decimals"
+        if is_mainnet
+        else "https://testnet.lcd.injective.network/injective/exchange/v1beta1/exchange/denom_decimals"
+    )
 
-    # fetch request
-    response_dic: Dict[str, int] = {}
-    async with aiohttp.ClientSession() as session:
-        async with session.get(request_url) as response:
-            denom_data = await response.json()["denom_decimals"]
-            for denom in denom_data:
-                response_dic[denom["denom"]] = denom["decimals"]
+    logger.info(f"Fetching denoms from: {request_url}")
 
-    return response_dic
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(request_url) as response:
+                if response.status != 200:
+                    logger.error(f"Error status code: {response.status}")
+                    logger.error(f"Error response: {await response.text()}")
+                    return {}
+
+                raw_data = await response.text()
+                logger.info(f"Raw response: {raw_data}")
+
+                denom_data = json.loads(raw_data)
+
+                if "denom_decimals" not in denom_data:
+                    logger.error("No 'denom_decimals' key in response")
+                    logger.error(f"Response keys: {denom_data.keys()}")
+                    return {}
+
+                denom_data = denom_data["denom_decimals"]
+                logger.info(f"Number of denoms found: {len(denom_data)}")
+
+                response_dic: Dict[str, int] = {}
+                for denom in denom_data:
+                    response_dic[denom["denom"]] = denom["decimals"]
+                    logger.info(
+                        f"Added denom: {denom['denom']} with decimals: {denom['decimals']}"
+                    )
+
+                return response_dic
+
+    except aiohttp.ClientError as e:
+        logger.error(f"Network error occurred: {str(e)}")
+        return {}
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error: {str(e)}")
+        return {}
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        return {}
 
 
 def extract_market_info(market_id: str) -> Tuple[str, str, str]:
