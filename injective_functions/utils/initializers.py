@@ -10,6 +10,7 @@ from pyinjective.wallet import PrivateKey
 class ChainInteractor:
     def __init__(self, network_type: str = "mainnet", private_key: str = None) -> None:
         self.private_key = private_key
+        self.network_type = network_type
         if not self.private_key:
             raise ValueError("No private key found in environment variables")
 

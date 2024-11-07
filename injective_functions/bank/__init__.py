@@ -24,7 +24,7 @@ class InjectiveBank(InjectiveBase):
     async def query_balances(self, denom_list: List[str] = None) -> Dict:
         try:
 
-            denoms: Dict[str, int] = await fetch_decimal_denoms(self.network_type)
+            denoms: Dict[str, int] = await fetch_decimal_denoms(self.chain_client.network_type)
             bank_balances = await self.chain_client.client.fetch_balances(
                 address=self.chain_client.address
             )["balances"]
@@ -52,7 +52,7 @@ class InjectiveBank(InjectiveBase):
 
     async def query_spendable_balances(self, denom_list: List[str] = None) -> Dict:
         try:
-            denoms: Dict[str, int] = await fetch_decimal_denoms(self.network_type)
+            denoms: Dict[str, int] = await fetch_decimal_denoms(self.chain_client.network_type)
             bank_balances = await self.chain_client.client.fetch_spendable_balances(
                 address=self.chain_client.address
             )["balances"]
@@ -82,7 +82,7 @@ class InjectiveBank(InjectiveBase):
     async def query_total_supply(self, denom_list: List[str] = None) -> Dict:
         try:
             # we request this over and over again because new tokens can be added
-            denoms: Dict[str, int] = await fetch_decimal_denoms(self.network_type)
+            denoms: Dict[str, int] = await fetch_decimal_denoms(self.chain_client.network)
             total_supply = await self.chain_client.client.fetch_total_supply()["supply"]
             human_readable_supply = {
                 token["denom"]: str(int(token["amount"]) / denoms[token["denom"]])

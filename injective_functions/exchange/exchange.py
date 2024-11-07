@@ -24,7 +24,7 @@ class InjectiveExchange(InjectiveBase):
             deposits = await self.chain_client.client.fetch_subaccount_deposits(
                 subaccount_id=subaccount_id
             )["deposits"]
-            denom_decimals = await fetch_decimal_denoms(self.network_type == "mainnet")
+            denom_decimals = await fetch_decimal_denoms(self.chain_client.network_type)
             human_readable_deposits = {}
             if len(denoms) > 0:
                 for denom in denoms:
