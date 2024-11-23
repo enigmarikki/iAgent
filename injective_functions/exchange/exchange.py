@@ -19,16 +19,15 @@ class InjectiveExchange(InjectiveBase):
         super().__init__(chain_client)
 
     async def get_subaccount_deposits(
-        self, subaccount_idx: int, denoms: str = None
+        self, subaccount_idx: int, denoms: List[str] = []
     ) -> Dict:
         try:
 
-            subaccount_id = await self.chain_client.address.get_subaccount_id(
-                subaccount_idx
-            )
+            subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
             deposits = await self.chain_client.client.fetch_subaccount_deposits(
                 subaccount_id=subaccount_id
-            )["deposits"]
+            )
+            deposits = deposits["deposits"]
             denom_decimals = await fetch_decimal_denoms(self.chain_client.network_type)
             human_readable_deposits = {}
             if len(denoms) > 0:
@@ -36,12 +35,12 @@ class InjectiveExchange(InjectiveBase):
                     if denom in deposits:
                         human_readable_deposits[denom] = {
                             "available_balance": str(
-                                deposits[denom]["availableBalance"]
-                                / denom_decimals[denom]
+                                int(deposits[denom]["availableBalance"])
+                                / 10 ** int(denom_decimals[denom])
                             ),
                             "total_balance": str(
-                                deposits[denom]["totalBalance"]
-                                / 10 ** denom_decimals[denom]
+                                int(deposits[denom]["totalBalance"])
+                                / 10 ** int(denom_decimals[denom])
                             ),
                         }
                     else:
@@ -52,15 +51,18 @@ class InjectiveExchange(InjectiveBase):
 
             else:
                 for denom, deposit in deposits.items():
-                    human_readable_deposits[deposit] = {
-                        "available_balance": str(
-                            deposit["availableBalance"] / 10 ** denom_decimals[denom]
-                        ),
-                        "total_balance": str(
-                            deposit["totalBalance"] / 10 ** denom_decimals[denom]
-                        ),
-                    }
+                    if denom in denom_decimals:
+                        human_readable_deposits[denom] = {}
+                        human_readable_deposits[denom]["available_balance"] = str(
+                            int(deposit["availableBalance"])
+                            / 10 ** int(denom_decimals[denom])
+                        )
 
+                        human_readable_deposits[denom]["total_balance"] = str(
+                            int(deposit["totalBalance"])
+                            / 10 ** int(denom_decimals[denom])
+                        )
+            return {"success": True, "result": human_readable_deposits}
         except Exception as e:
             return {"success": False, "error": detailed_exception_info(e)}
 

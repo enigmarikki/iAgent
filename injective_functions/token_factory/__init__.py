@@ -14,7 +14,7 @@ class InjectiveTokenFactory(InjectiveBase):
         self, subdenom: str, name: str, symbol: str, decimals: int
     ) -> Dict:
         try:
-            self.chain_client.init_client()
+            await self.chain_client.init_client()
             msg = self.chain_client.composer.msg_create_denom(
                 sender=self.chain_client.address.to_acc_bech32(),
                 subdenom=subdenom,
@@ -31,7 +31,7 @@ class InjectiveTokenFactory(InjectiveBase):
 
     async def mint(self, denom: str, amount: int) -> Dict:
         try:
-            self.chain_client.init_client()
+            await self.chain_client.init_client()
             amount = self.chain_client.composer.coin(amount=amount, denom=denom)
             msg = self.chain_client.composer.msg_mint(
                 sender=self.chain_client.address.to_acc_bech32(),
@@ -46,7 +46,7 @@ class InjectiveTokenFactory(InjectiveBase):
 
     async def burn(self, denom: str, amount: int) -> Dict:
         try:
-            self.chain_client.init_client()
+            await self.chain_client.init_client()
             amount = self.chain_client.composer.coin(amount=amount, denom=denom)
             msg = self.chain_client.composer.msg_burn(
                 sender=self.chain_client.address.to_acc_bech32(),
@@ -70,7 +70,6 @@ class InjectiveTokenFactory(InjectiveBase):
         symbol: str,
         uri: str,
         uri_hash: str,
-        amount: int,
     ) -> Dict:
         try:
 

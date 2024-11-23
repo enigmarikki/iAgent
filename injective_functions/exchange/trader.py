@@ -1,7 +1,7 @@
 import uuid
 from decimal import Decimal
 from injective_functions.base import InjectiveBase
-from injective_functions.utils.helpers import impute_market_id
+from injective_functions.utils.helpers import impute_market_id, base64convert
 
 # TODO: serve endpoints of trader functions via an api
 # to isolate functions as much as possible
@@ -20,6 +20,7 @@ class InjectiveTrading(InjectiveBase):
         side: str,
         market_id: str,
         subaccount_idx: int,
+        leverage: str,
     ):
         """Place a limit order"""
         market_id = await impute_market_id(market_id)
@@ -46,7 +47,12 @@ class InjectiveTrading(InjectiveBase):
         return await self.chain_client.build_and_broadcast_tx(msg)
 
     async def place_derivative_market_order(
-        self, quantity: float, side: str, market_id: str, subaccount_idx: int
+        self,
+        quantity: float,
+        side: str,
+        market_id: str,
+        subaccount_idx: int,
+        leverage: str,
     ):
         """Place a market order"""
 
@@ -70,7 +76,7 @@ class InjectiveTrading(InjectiveBase):
             margin=self.chain_client.composer.calculate_margin(
                 quantity=Decimal(str(quantity)),
                 price=Decimal(estimated_price),
-                leverage=Decimal(1),
+                leverage=Decimal(leverage),
                 is_reduce_only=False,
             ),
             order_type=side,
@@ -150,8 +156,7 @@ class InjectiveTrading(InjectiveBase):
     async def cancel_spot_limit_order(
         self, market_id: str, subaccount_idx: int, order_hash: str
     ):
-        await self.chain_client.init_client()
-
+        order_hash = base64convert(order_hash)
         market_id = await impute_market_id(market_id)
         subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
         msg = self.chain_client.composer.msg_cancel_spot_order(
