@@ -5,7 +5,6 @@ import base64
 import requests
 from injective_functions.utils.indexer_requests import get_market_id
 
-
 def base64convert(s):
     try:
         int(s.replace("0x", ""), 16)

@@ -206,7 +206,7 @@ class InjectiveExchange(InjectiveBase):
             )
             return {"success": True, "result": orders}
         except Exception as e:
-            return {"success": False, "result": detailed_exception_info(e)}
+            return {"success": False, "error": detailed_exception_info(e)}
 
     async def trader_spot_orders_by_hash(
         self, market_id: str, subaccount_idx: int, order_hashes: List[str]

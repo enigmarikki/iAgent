@@ -46,7 +46,7 @@ class InjectiveChatAgent:
             "./injective_functions/exchange/exchange_schema.json",
             "./injective_functions/staking/staking_schema.json",
             "./injective_functions/token_factory/token_factory_schema.json",
-            "./injective_functions/utils/utils_schema.json",
+            "./injective_functions/wasm/wasm_schema.json"
         ]
         self.function_schemas = FunctionSchemaLoader.load_schemas(schema_paths)
 
@@ -146,7 +146,6 @@ class InjectiveChatAgent:
             )
 
             response_message = response.choices[0].message
-            print(response_message)
             # Handle function calling
             if (
                 hasattr(response_message, "function_call")
