@@ -25,7 +25,7 @@ All required packages are listed in requirements.txt. Ensure you have Python 3.1
 
 1. Clone this repository and navigate into it:
    ```bash
-   git clone org-44571224@github.com:InjectiveLabs/iAgent.git
+   git clone https://github.com/InjectiveLabs/iAgent.git
    cd iAgent  
    ```	
 2. Install the required packages:

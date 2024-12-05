@@ -10,29 +10,31 @@ from pyinjective.client.model.pagination import PaginationOption
 
 from typing import Dict, List
 
-# TODO: Convert raw exchange message formats to human readable
-
-
 class InjectiveExchange(InjectiveBase):
     def __init__(self, chain_client) -> None:
         # Initializes the network and the composer
         super().__init__(chain_client)
-
+    
     async def get_subaccount_deposits(
         self, subaccount_idx: int, denoms: List[str] = None
     ) -> Dict:
         try:
 
             subaccount_id = self.chain_client.address.get_subaccount_id(subaccount_idx)
-            deposits = await self.chain_client.client.fetch_subaccount_deposits(
-                subaccount_id=subaccount_id
+            deposits_response = (
+                await self.chain_client.client.fetch_subaccount_deposits(
+                    subaccount_id=subaccount_id
+                )
             )
-            deposits = deposits["deposits"]
+            deposits = deposits_response["deposits"]
             denom_decimals = await fetch_decimal_denoms(self.chain_client.network_type)
             human_readable_deposits = {}
+            # checks if the denoms are specified
             if denoms:
+                # iterate through the specified denoms
                 for denom in denoms:
-                    if denom in deposits:
+                    # Corner case 1: denom might not be in deposits found in chain data a case when gpt function calling parses wrong args
+                    if denom in deposits and denom in denom_decimals:
                         human_readable_deposits[denom] = {
                             "available_balance": str(
                                 int(deposits[denom]["availableBalance"])
@@ -48,7 +50,7 @@ class InjectiveExchange(InjectiveBase):
                             "available_balance": "balance not found",
                             "total_balance": "balance not found",
                         }
-
+            # Otherwise we iterate through all the denoms
             else:
                 for denom, deposit in deposits.items():
                     if denom in denom_decimals:
