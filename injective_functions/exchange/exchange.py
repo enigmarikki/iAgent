@@ -10,11 +10,12 @@ from pyinjective.client.model.pagination import PaginationOption
 
 from typing import Dict, List
 
+
 class InjectiveExchange(InjectiveBase):
     def __init__(self, chain_client) -> None:
         # Initializes the network and the composer
         super().__init__(chain_client)
-    
+
     async def get_subaccount_deposits(
         self, subaccount_idx: int, denoms: List[str] = None
     ) -> Dict:
