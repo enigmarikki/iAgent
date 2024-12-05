@@ -1,7 +1,7 @@
 from decimal import Decimal
 from injective_functions.base import InjectiveBase
 from injective_functions.utils.helpers import VaultContractType, SpotRedemptionType
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import json
 
 
@@ -181,6 +181,121 @@ class MitoContracts(InjectiveBase):
                     }
                 }
             }),
+        )
+
+        return await self.chain_client.build_and_broadcast_tx(msg)
+    
+    async def claim_stake_mito_vault(
+        self,
+        vault_lp_denom: str,
+        staking_contract_address: str,
+    ) -> Dict:
+        """
+        Claim staking rewards from Mito vault
+        """
+        msg = self.chain_client.composer.msg_execute_contract_compat(
+            sender=self.chain_client.address.to_acc_bech32(),
+            contract=staking_contract_address,
+            msg=json.dumps({
+                "action": "claim_stake",
+                "msg": {
+                    "lp_token": vault_lp_denom
+                }
+            }),
+            funds="",
+        )
+
+        return await self.chain_client.build_and_broadcast_tx(msg)
+    async def claim_rewards_mito(
+        self,
+        vault_lp_denom: str,
+        staking_contract_address: str,
+    ) -> Dict:
+        """
+        Claim rewards from Mito vault
+        """
+        msg = self.chain_client.composer.msg_execute_contract_compat(
+            sender=self.chain_client.address.to_acc_bech32(),
+            contract=staking_contract_address,
+            msg=json.dumps({
+                "action": "claim_rewards",
+                "msg": {
+                    "lp_token": vault_lp_denom
+                }
+            }),
+            funds="",
+        )
+
+        return await self.chain_client.build_and_broadcast_tx(msg)
+    
+    #TODO: Need to test in testnet
+    async def instantiate_cpmm_vault(
+        self,
+        inj_amount: float,
+        base_token_amount: float,
+        base_token_denom: str,
+        quote_token_amount: float,
+        quote_token_denom: str,
+        market_id: str,
+        fee_bps: int,
+        base_decimals: int,
+        quote_decimals: int,
+        owner_address: str = None,
+    ) -> Dict:
+        """
+        Instantiate a CPMM vault with specified parameters
+        """
+        if owner_address is None:
+            owner_address = self.chain_client.address.to_acc_bech32()
+
+        # Set contract configuration based on network
+        CPMM_CONTRACT_CODE = 540
+        MITO_MASTER_CONTRACT_ADDRESS = "inj1vcqkkvqs7prqu70dpddfj7kqeqfdz5gg662qs3"
+
+        funds = [
+            f"{int(quote_token_amount)}{quote_token_denom}",
+            f"{int(base_token_amount)}{base_token_denom}"
+        ]
+        funds_str = ",".join(funds)
+        #TODO: improve the parameterization
+        data = {
+            "action": "register_vault",
+            "msg": {
+                "is_subscribing_with_funds": True,
+                "registration_mode": {
+                    "permissionless": {
+                        "whitelisted_vault_code_id": CPMM_CONTRACT_CODE
+                    }
+                },
+                "instantiate_vault_msg": {
+                    "Amm": {
+                        "owner": owner_address,
+                        "master_address": MITO_MASTER_CONTRACT_ADDRESS,
+                        "notional_value_cap": "1000000000000000000000000",
+                        "market_id": market_id,
+                        "pricing_strategy": {
+                            "SmoothingPricingWithRelativePriceRange": {
+                                "bid_range": "0.8",
+                                "ask_range": "0.8"
+                            }
+                        },
+                        "max_invariant_sensitivity_bps": "5",
+                        "max_price_sensitivity_bps": "5",
+                        "fee_bps": fee_bps,
+                        "order_type": "Vanilla",
+                        "config_owner": owner_address,
+                        "base_decimals": base_decimals,
+                        "quote_decimals": quote_decimals
+                    }
+                }
+            }
+        }
+
+        msg = self.chain_client.composer.msg_execute_contract_compat(
+            sender=owner_address,
+            contract=MITO_MASTER_CONTRACT_ADDRESS,
+            msg=json.dumps(data),
+            funds=funds_str,
         )
 
         return await self.chain_client.build_and_broadcast_tx(msg)
