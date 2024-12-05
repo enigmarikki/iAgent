@@ -47,6 +47,7 @@ class InjectiveChatAgent:
             "./injective_functions/staking/staking_schema.json",
             "./injective_functions/token_factory/token_factory_schema.json",
             "./injective_functions/wasm/wasm_schema.json",
+            "./injective_functions/utils/mito_get_requests_schema.json"
         ]
         self.function_schemas = FunctionSchemaLoader.load_schemas(schema_paths)
 
