@@ -52,7 +52,7 @@ class MitoContracts(InjectiveBase):
         )
         return await self.chain_client.build_and_broadcast_tx(msg)
     # Subcribe to spot
-    # TODO: Improve parameterization
+    #TODO: Add support to derivative vaults
     async def subscription_mito_spot(
         self,
         base_amount: float,
