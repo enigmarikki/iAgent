@@ -95,6 +95,19 @@ class InjectiveFunctionMapper:
         "get_whitelist": ("mito_fetch_data", "get_whitelist"),
         "get_token_metadata": ("mito_fetch_data", "get_token_metadata"),
         "get_claim_references": ("mito_fetch_data", "get_claim_references"),
+        # Mito txs
+        "subscribe_to_launchpad": ("mito_transactions", "subscribe_to_launchpad"),
+        "claim_launchpad_subscription": (
+            "mito_transactions",
+            "claim_launchpad_subscription",
+        ),
+        "subscription_mito_spot": ("mito_transactions", "subscription_mito_spot"),
+        "redeem_mito_vault": ("mito_transactions", "redeem_mito_vault"),
+        "stake_mito_vault": ("mito_transactions", "stake_mito_vault"),
+        "unstake_mito": ("mito_transactions", "unstake_mito"),
+        "claim_stake_mito_vault": ("mito_transactions", "claim_stake_mito_vault"),
+        "claim_rewards_mito": ("mito_transactions", "claim_rewards_mito"),
+        "instantiate_cpmm_vault": ("mito_transactions", "instantiate_cpmm_vault"),
     }
 
     @classmethod

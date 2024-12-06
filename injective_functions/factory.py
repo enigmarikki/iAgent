@@ -9,6 +9,7 @@ from injective_functions.exchange.trader import InjectiveTrading
 from injective_functions.staking import InjectiveStaking
 from injective_functions.token_factory import InjectiveTokenFactory
 from injective_functions.utils.mito_requests import MitoAPIClient
+from injective_functions.wasm.mito_contracts import InjectiveMitoContracts
 
 MITO_BASE_URI = "https://k8s.mainnet.mito.grpc-web.injective.network/api/v1"
 class InjectiveClientFactory:
@@ -42,7 +43,8 @@ class InjectiveClientFactory:
             "trader": InjectiveTrading(chain_client),
             "staking": InjectiveStaking(chain_client),
             "token_factory": InjectiveTokenFactory(chain_client),
-            "mito_fetch_data": MitoAPIClient(MITO_BASE_URI)
+            "mito_fetch_data": MitoAPIClient(MITO_BASE_URI),
+            "mito_transactions": InjectiveMitoContracts(chain_client)
         }
         print(clients)
         return clients
