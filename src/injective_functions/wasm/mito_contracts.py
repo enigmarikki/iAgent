@@ -1,6 +1,5 @@
 from decimal import Decimal
-from injective_functions.base import InjectiveBase
-from injective_functions.utils.helpers import VaultContractType, SpotRedemptionType
+from src.injective_functions.base import InjectiveBase
 from typing import List, Dict, Tuple
 import json
 

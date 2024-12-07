@@ -3,7 +3,7 @@ import json
 import re
 import base64
 import requests
-from injective_functions.utils.indexer_requests import get_market_id
+from src.injective_functions.utils.indexer_requests import get_market_id
 
 
 def base64convert(s):

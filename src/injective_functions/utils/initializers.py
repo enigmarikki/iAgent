@@ -5,7 +5,7 @@ from pyinjective.core.network import Network
 from pyinjective.core.broadcaster import MsgBroadcasterWithPk
 from pyinjective.transaction import Transaction
 from pyinjective.wallet import PrivateKey
-from injective_functions.utils.helpers import detailed_exception_info
+from src.injective_functions.utils.helpers import detailed_exception_info
 
 
 class ChainInteractor:
