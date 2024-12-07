@@ -9,7 +9,7 @@ CPMM_CONTRACT_CODE = 540
 MITO_MASTER_CONTRACT_ADDRESS = "inj1vcqkkvqs7prqu70dpddfj7kqeqfdz5gg662qs3"
 
 
-#TODO: Fetch vault details and abstract away the vault data through gpt
+# TODO: Fetch vault details and abstract away the vault data through gpt
 class InjectiveMitoContracts(InjectiveBase):
     def __init__(self, chain_client):
         super().__init__(chain_client)
@@ -76,13 +76,15 @@ class InjectiveMitoContracts(InjectiveBase):
             else {}
         )
 
-        data = json.dumps({
-            "vault_subaccount_id": vault_subaccount_id,
-            "trader_subaccount_id": self.chain_client.address.get_subaccount_id(
-                trader_subaccount_idx
-            ),
-            "msg": {"subscribe": subscription_args},
-        })
+        data = json.dumps(
+            {
+                "vault_subaccount_id": vault_subaccount_id,
+                "trader_subaccount_id": self.chain_client.address.get_subaccount_id(
+                    trader_subaccount_idx
+                ),
+                "msg": {"subscribe": subscription_args},
+            }
+        )
 
         funds_list = []
         if spot_redemption_type != "QuoteOnly" and base_amount > 0:
@@ -122,13 +124,15 @@ class InjectiveMitoContracts(InjectiveBase):
         )
         subscription_args["redemption_type"] = redemption_type
 
-        data = json.dumps({
-            "vault_subaccount_id": vault_subaccount_id,
-            "trader_subaccount_id": self.chain_client.address.get_subaccount_id(
-                trader_subaccount_idx
-            ),
-            "msg": {"redeem": subscription_args},
-        })
+        data = json.dumps(
+            {
+                "vault_subaccount_id": vault_subaccount_id,
+                "trader_subaccount_id": self.chain_client.address.get_subaccount_id(
+                    trader_subaccount_idx
+                ),
+                "msg": {"redeem": subscription_args},
+            }
+        )
 
         funds = f"{redeem_amount}{lp_denom}"
 
@@ -150,7 +154,7 @@ class InjectiveMitoContracts(InjectiveBase):
         """
         Stake LP tokens in Mito vault
         """
-        #TODO: verify if this has to be chain denom or not
+        # TODO: verify if this has to be chain denom or not
         funds = f"{amount}{vault_lp_denom}"
         data = json.dumps({"action": "stake", "msg": {}})
         msg = self.chain_client.composer.msg_execute_contract_compat(
@@ -161,7 +165,7 @@ class InjectiveMitoContracts(InjectiveBase):
         )
 
         return await self.chain_client.build_and_broadcast_tx(msg)
-    
+
     async def unstake_mito(
         self,
         amount: float,
@@ -170,24 +174,23 @@ class InjectiveMitoContracts(InjectiveBase):
         staking_contract_address: str,
     ) -> Dict:
         """Unstake LP tokens from Mito vault"""
-        amount_in_chain = int(amount * (10 ** vault_token_decimals))
-        data = json.dumps({
+        amount_in_chain = int(amount * (10**vault_token_decimals))
+        data = json.dumps(
+            {
                 "action": "unstake",
                 "msg": {
-                    "coin": {
-                        "denom": vault_lp_denom,
-                        "amount": str(amount_in_chain)
-                    }
-                }
-            })
+                    "coin": {"denom": vault_lp_denom, "amount": str(amount_in_chain)}
+                },
+            }
+        )
         msg = self.chain_client.composer.msg_execute_contract_compat(
             sender=self.chain_client.address.to_acc_bech32(),
             contract=staking_contract_address,
-            msg=data
+            msg=data,
         )
 
         return await self.chain_client.build_and_broadcast_tx(msg)
-    
+
     async def claim_stake_mito_vault(
         self,
         vault_lp_denom: str,
@@ -196,19 +199,17 @@ class InjectiveMitoContracts(InjectiveBase):
         """
         Claim staking rewards from Mito vault
         """
-        data = json.dumps({
-                "action": "claim_stake",
-                "msg": {
-                    "lp_token": vault_lp_denom
-                }
-            })
+        data = json.dumps(
+            {"action": "claim_stake", "msg": {"lp_token": vault_lp_denom}}
+        )
         msg = self.chain_client.composer.msg_execute_contract_compat(
             sender=self.chain_client.address.to_acc_bech32(),
             contract=staking_contract_address,
-            msg= data
+            msg=data,
         )
 
         return await self.chain_client.build_and_broadcast_tx(msg)
+
     async def claim_rewards_mito(
         self,
         vault_lp_denom: str,
@@ -217,22 +218,19 @@ class InjectiveMitoContracts(InjectiveBase):
         """
         Claim rewards from Mito vault
         """
-        data  = json.dumps({
-                "action": "claim_rewards",
-                "msg": {
-                    "lp_token": vault_lp_denom
-                }
-            })
+        data = json.dumps(
+            {"action": "claim_rewards", "msg": {"lp_token": vault_lp_denom}}
+        )
         msg = self.chain_client.composer.msg_execute_contract_compat(
             sender=self.chain_client.address.to_acc_bech32(),
             contract=staking_contract_address,
-            msg=data
+            msg=data,
         )
 
         return await self.chain_client.build_and_broadcast_tx(msg)
-    
-    #TODO: Need to test in testnet and improve parameterization of the default cpmm
-    #This is the permissionless cpmm vault
+
+    # TODO: Need to test in testnet and improve parameterization of the default cpmm
+    # This is the permissionless cpmm vault
     async def instantiate_cpmm_vault(
         self,
         base_token_amount: float,
@@ -253,7 +251,7 @@ class InjectiveMitoContracts(InjectiveBase):
 
         funds = [
             (quote_token_amount, quote_token_denom),
-            (base_token_amount ,base_token_denom)
+            (base_token_amount, base_token_denom),
         ]
         funds = self._order_funds_by_denom(funds)
         data = {
@@ -261,9 +259,7 @@ class InjectiveMitoContracts(InjectiveBase):
             "msg": {
                 "is_subscribing_with_funds": True,
                 "registration_mode": {
-                    "permissionless": {
-                        "whitelisted_vault_code_id": CPMM_CONTRACT_CODE
-                    }
+                    "permissionless": {"whitelisted_vault_code_id": CPMM_CONTRACT_CODE}
                 },
                 "instantiate_vault_msg": {
                     "Amm": {
@@ -274,7 +270,7 @@ class InjectiveMitoContracts(InjectiveBase):
                         "pricing_strategy": {
                             "SmoothingPricingWithRelativePriceRange": {
                                 "bid_range": "0.8",
-                                "ask_range": "0.8"
+                                "ask_range": "0.8",
                             }
                         },
                         "max_invariant_sensitivity_bps": "5",
@@ -283,10 +279,10 @@ class InjectiveMitoContracts(InjectiveBase):
                         "order_type": "Vanilla",
                         "config_owner": owner_address,
                         "base_decimals": base_decimals,
-                        "quote_decimals": quote_decimals
+                        "quote_decimals": quote_decimals,
                     }
-                }
-            }
+                },
+            },
         }
 
         msg = self.chain_client.composer.msg_execute_contract_compat(
