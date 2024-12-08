@@ -4,9 +4,8 @@ import asyncio
 from src.chat_server.config import Config
 from src.chat_server.conversation_manager import ConversationManager
 from src.injective_functions.utils.function_helper import FunctionSchemaLoader
-
-PROMPT_CONTENT = (
-    """You are a helpful AI assistant on Injective Chain. 
+from src.injective_functions.utils.helpers import detailed_exception_info
+PROMPT_CONTENT =  """You are a helpful AI assistant on Injective Chain. 
                     You will be answering all things related to injective chain, and help out with
                     on-chain functions.
                     
@@ -31,9 +30,10 @@ PROMPT_CONTENT = (
                     
                     For general questions, provide informative responses.
                     When users want to perform actions, describe the action and ask for confirmation but for fetching data you dont have to ask for confirmation.""",
-)
 
 
+# Let us render all the data requests here
+# Function call on the transactions are something that I need to think about
 class InjectiveChatService:
     def __init__(self):
         self.config = Config()
@@ -74,11 +74,11 @@ class InjectiveChatService:
                         },
                     },
                 )
-
+                
                 # Return the function call details
                 return {
                     "type": "function_call",
-                    "function": {"name": function_name, "arguments": function_args},
+                    "content": {"function_name": function_name, "arguments": function_args},
                     "session_id": session_id,
                 }
 
@@ -91,10 +91,9 @@ class InjectiveChatService:
             return {"type": "message", "content": content, "session_id": session_id}
 
         except Exception as e:
-            error_msg = f"I apologize, but I encountered an error: {str(e)}"
+            error_msg = f"I apologize, but I encountered an error: {str(detailed_exception_info(e))}"
             return {
                 "type": "error",
-                "error": str(e),
                 "content": error_msg,
                 "session_id": session_id,
             }
@@ -113,7 +112,7 @@ class InjectiveChatService:
     def _get_messages_with_system_prompt(self, session_id: str):
         system_message = {
             "role": "system",
-            "content": """You are a helpful AI assistant on Injective Chain...""",  # Your existing system prompt
+            "content": str(PROMPT_CONTENT)
         }
         return [system_message] + self.conversation_manager.get_history(session_id)
 

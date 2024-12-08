@@ -8,14 +8,14 @@ from pathlib import Path
 class InjectiveFunctionMapper:
     # Map function names to (client_type, method_name)
     FUNCTION_MAP: Dict[str, Tuple[str, str]] = {
-        # Trader functions
+        # Trader tx functions
         "place_derivative_limit_order": ("trader", "place_derivative_limit_order"),
         "place_derivative_market_order": ("trader", "place_derivative_market_order"),
         "place_spot_limit_order": ("trader", "place_spot_limit_order"),
         "place_spot_market_order": ("trader", "place_spot_market_order"),
         "cancel_derivative_limit_order": ("trader", "cancel_derivative_limit_order"),
         "cancel_spot_limit_order": ("trader", "cancel_spot_limit_order"),
-        # Exchange functions
+        # Exchange fetch functions
         "get_subaccount_deposits": ("exchange", "get_subaccount_deposits"),
         "get_aggregate_market_volumes": ("exchange", "get_aggregate_market_volumes"),
         "get_aggregate_account_volumes": ("exchange", "get_aggregate_account_volumes"),
@@ -39,22 +39,24 @@ class InjectiveFunctionMapper:
         "trader_spot_orders": ("exchange", "trader_spot_orders"),
         "trader_spot_orders_by_hash": ("exchange", "trader_spot_orders_by_hash"),
         # Bank functions
-        "query_balances": ("bank", "query_balances"),
         "transfer_funds": ("bank", "transfer_funds"),
+        # Bank fetch functions
+        "query_balances": ("bank", "query_balances"),
         "query_spendable_balances": ("bank", "query_spendable_balances"),
         "query_total_supply": ("bank", "query_total_supply"),
         # Staking functions
         "stake_tokens": ("staking", "stake_tokens"),
         # Auction functions
         "send_bid_auction": ("auction", "send_bid_auction"),
+        # Auction fetch functions
         "fetch_auctions": ("auction", "fetch_auctions"),
         "fetch_latest_auction": ("auction", "fetch_latest_auction"),
         "fetch_auction_bids": ("auction", "fetch_auction_bids"),
-        # Authz functions
+        # Authz tx functions
         "grant_address_auth": ("authz", "grant_address_auth"),
         "revoke_address_auth": ("authz", "revoke_address_auth"),
         "fetch_grants": ("authz", "fetch_grants"),
-        # Token factory functions
+        # Token tx factory functions
         "create_denom": ("token_factory", "create_denom"),
         "mint": ("token_factory", "mint"),
         "burn": ("token_factory", "burn"),
@@ -109,7 +111,88 @@ class InjectiveFunctionMapper:
         "claim_rewards_mito": ("mito_transactions", "claim_rewards_mito"),
         "instantiate_cpmm_vault": ("mito_transactions", "instantiate_cpmm_vault"),
     }
-
+    FUNCTION_TYPE_MAP: Dict[str, str] = {
+        "place_derivative_limit_order": ("trader", "place_derivative_limit_order"),
+        "place_derivative_market_order": ("trader", "place_derivative_market_order"),
+        "place_spot_limit_order": ("trader", "place_spot_limit_order"),
+        "place_spot_market_order": ("trader", "place_spot_market_order"),
+        "cancel_derivative_limit_order": ("trader", "cancel_derivative_limit_order"),
+        "cancel_spot_limit_order": ("trader", "cancel_spot_limit_order"),
+        # Exchange fetch functions
+        "get_subaccount_deposits": "fetch",
+        "get_aggregate_market_volumes": "fetch",
+        "get_aggregate_account_volumes": "fetch",
+        "get_subaccount_orders": "fetch",
+        "get_historical_orders": "fetch",
+        "get_mid_price_and_tob_derivatives_market": "fetch",
+        "get_mid_price_and_tob_spot_market": "fetch",
+        "get_derivatives_orderbook": "fetch",
+        "get_spot_orderbook": "fetch",
+        "trader_derivative_orders": "fetch",
+        "trader_derivative_orders_by_hash": "fetch",
+        "trader_spot_orders": "fetch",
+        "trader_spot_orders_by_hash": "fetch",
+        # Bank functions
+        "transfer_funds": "fetch",
+        # Bank fetch functions
+        "query_balances": "fetch",
+        "query_spendable_balances": "fetch",
+        "query_total_supply": "fetch",
+        # Staking functions
+        "stake_tokens": "tx",
+        # Auction functions
+        "send_bid_auction": "tx",
+        # Auction fetch functions
+        "fetch_auctions": "fetch",
+        "fetch_latest_auction": "fetch",
+        "fetch_auction_bids": "fetch",
+        # Authz tx functions
+        "grant_address_auth": "tx",
+        "revoke_address_auth": "tx",
+        "fetch_grants": "tx",
+        # Token tx factory functions
+        "create_denom": "tx",
+        "mint": "tx",
+        "burn": "tx",
+        "set_denom_metadata": "tx",
+        # Mito fetch functions
+        "get_vaults": "fetch",
+        "get_vault": "fetch",
+        "get_lp_token_price_chart": "fetch",
+        "get_tvl_chart": "fetch",
+        "get_vaults_by_holder_address": "fetch",
+        "get_lp_holders": "fetch",
+        "get_portfolio": "fetch",
+        "get_leaderboard": "fetch",
+        "get_leaderboard_epochs" : "fetch",
+        "get_transfers_history":"fetch",
+        "get_staking_pools": "fetch",
+        "get_staking_reward_by_account": "fetch",
+        "get_staking_history": "fetch",
+        "get_staking_amount_at_height": "fetch",
+        "get_health": "fetch",
+        "get_execution": "fetch",
+        "get_missions": "fetch",
+        "get_mission_leaderboard": "fetch",
+        "list_idos": "fetch",
+        "get_ido": "fetch",
+        "get_ido_subscribers": "fetch",
+        "get_ido_subscription": "fetch",
+        "get_ido_activities": "fetch",
+        "get_whitelist": "fetch",
+        "get_token_metadata": "fetch",
+        "get_claim_references": "fetch",
+        # Mito txs
+        "subscribe_to_launchpad": "tx",
+        "claim_launchpad_subscription": "tx",
+        "subscription_mito_spot": "tx",
+        "redeem_mito_vault": "tx",
+        "stake_mito_vault": "tx",
+        "unstake_mito": "tx",
+        "claim_stake_mito_vault": "tx",
+        "claim_rewards_mito": "tx",
+        "instantiate_cpmm_vault": "tx",
+    }
     @classmethod
     def get_function_mapping(cls, function_name: str) -> Optional[Tuple[str, str]]:
         """Get the client type and method name for a given function"""

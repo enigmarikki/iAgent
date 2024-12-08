@@ -1,3 +1,4 @@
+#TODO: Extend to a unstructured to persist conversation data and add retention policy
 class ConversationManager:
     def __init__(self):
         self.conversations = {}
